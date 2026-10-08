@@ -166,7 +166,7 @@ function ScanDetails({ report, defaultOpen }: { report: ScanReport; defaultOpen:
                     {items.map((it) => (
                         <div key={it.label} className="flex flex-col">
                             <dt className="text-xs uppercase tracking-wide text-slate-500">{it.label}</dt>
-                            <dd className={`font-mono ${report.truncated && it.label === "Status" ? "text-amber-700" : "text-slate-800"}`}>{it.value}</dd>
+                            <dd className={`${report.truncated && it.label === "Status" ? "text-amber-700" : "text-slate-800"}`}>{it.value}</dd>
                         </div>
                     ))}
                 </dl>
