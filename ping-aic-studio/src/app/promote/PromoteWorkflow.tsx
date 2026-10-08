@@ -858,9 +858,9 @@ function ArchiveTable({ tasks, environments, onRestore }: { tasks: PromotionTask
                     {task.description && <p className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">{task.description}</p>}
                   </td>
                   <td className="px-4 py-2.5 text-xs text-slate-600">
-                    <span className="font-mono">{srcLabel}</span>
+                    <span className="">{srcLabel}</span>
                     <span className="text-slate-400 mx-1">→</span>
-                    <span className="font-mono">{tgtLabel}</span>
+                    <span className="">{tgtLabel}</span>
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex flex-wrap gap-1">
