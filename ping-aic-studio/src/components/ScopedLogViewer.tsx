@@ -314,7 +314,7 @@ export function ScopedLogViewer({
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 code-surface border-b border-slate-700">
         <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", statusDotClass)} />
-        <span className={cn("text-xs font-mono font-medium", statusTextColor)}>
+        <span className={cn("text-xs font-medium", statusTextColor)}>
           {statusText}
         </span>
         {logs.length > 0 && (
@@ -363,7 +363,7 @@ export function ScopedLogViewer({
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Escape") handleToggleSearch(); }}
             placeholder="Search logs…"
-            className="flex-1 bg-transparent text-xs font-mono text-slate-200 placeholder-slate-600 outline-none"
+            className="flex-1 bg-transparent text-xs text-slate-200 placeholder-slate-600 outline-none"
           />
           {search && (
             <span className="text-[10px] font-mono text-slate-500 shrink-0">
