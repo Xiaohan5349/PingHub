@@ -363,10 +363,10 @@ export function ScopedLogViewer({
             onChange={(e) => setSearch(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Escape") handleToggleSearch(); }}
             placeholder="Search logs…"
-            className="flex-1 bg-transparent text-xs text-slate-200 placeholder-slate-600 outline-none"
+            className="flex-1 bg-transparent text-xs font-mono text-slate-200 placeholder-slate-600 outline-none"
           />
           {search && (
-            <span className="text-[10px] font-mono text-slate-500 shrink-0">
+            <span className="text-[10px] text-slate-500 shrink-0">
               {matchCount} match{matchCount !== 1 ? "es" : ""}
             </span>
           )}
