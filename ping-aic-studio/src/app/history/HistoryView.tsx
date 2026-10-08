@@ -103,7 +103,7 @@ function RecordDrawer({
         <div className="p-6 space-y-4">
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="text-slate-400 text-xs pt-0.5">Kind</dt>
-            <dd className="font-mono text-xs text-slate-700">{record.kind === "commit" ? "git commit" : "op log"}</dd>
+            <dd className="text-xs text-slate-700">{record.kind === "commit" ? "git commit" : "op log"}</dd>
 
             <dt className="text-slate-400 text-xs pt-0.5">Status</dt>
             <dd>
@@ -129,7 +129,7 @@ function RecordDrawer({
             )}
 
             <dt className="text-slate-400 text-xs pt-0.5">Duration</dt>
-            <dd className="font-mono text-xs text-slate-700">{formatDuration(record.duration)}</dd>
+            <dd className="text-xs text-slate-700">{formatDuration(record.duration)}</dd>
 
             {record.scopes.length > 0 && (
               <>
@@ -141,7 +141,7 @@ function RecordDrawer({
             {record.author && (
               <>
                 <dt className="text-slate-400 text-xs pt-0.5">Author</dt>
-                <dd className="font-mono text-xs text-slate-700">{record.author}</dd>
+                <dd className="text-xs text-slate-700">{record.author}</dd>
               </>
             )}
 
@@ -191,7 +191,7 @@ function RecordDrawer({
             {record.logEntryCount != null && (
               <>
                 <dt className="text-slate-400 text-xs pt-0.5">Log Entries</dt>
-                <dd className="font-mono text-xs text-slate-700">{record.logEntryCount.toLocaleString()}</dd>
+                <dd className="text-xs text-slate-700">{record.logEntryCount.toLocaleString()}</dd>
               </>
             )}
           </dl>
