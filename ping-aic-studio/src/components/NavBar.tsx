@@ -92,6 +92,9 @@ export function NavBar() {
   const [envs, setEnvs] = useState<Environment[]>([]);
   const [openGroup, setOpenGroup] = useState<string | null>(null);
   const closeTimer = useRef<number | null>(null);
+  // How the open menu was opened. A click on a menu that hover just opened
+  // must keep it open (touch taps fire an emulated hover first).
+  const openedByClick = useRef(false);
   const headerRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
@@ -135,6 +138,15 @@ export function NavBar() {
 
   const hoverOpen = (label: string) => {
     if (closeTimer.current) window.clearTimeout(closeTimer.current);
+    if (openGroup !== label) openedByClick.current = false;
+    setOpenGroup(label);
+  };
+  const clickToggle = (label: string) => {
+    if (openGroup === label && openedByClick.current) {
+      setOpenGroup(null);
+      return;
+    }
+    openedByClick.current = true;
     setOpenGroup(label);
   };
   const hoverClose = () => {
@@ -153,7 +165,7 @@ export function NavBar() {
             <span className="hidden lg:inline">Ping AIC Studio</span>
           </Link>
 
-          <nav className="flex items-center gap-0.5 min-w-0" aria-label="Main">
+          <nav className="flex items-center gap-0.5 min-w-0 overflow-x-auto sm:overflow-visible scrollbar-hidden" aria-label="Main">
             {NAV_GROUPS.map((group) => {
               const isCurrent = group === currentGroup;
               const groupBtn = cn(
@@ -182,7 +194,7 @@ export function NavBar() {
                     type="button"
                     aria-haspopup="true"
                     aria-expanded={isOpen}
-                    onClick={() => setOpenGroup(isOpen ? null : group.label)}
+                    onClick={() => clickToggle(group.label)}
                     className={cn(groupBtn, isOpen && !isCurrent && "bg-hover text-ink")}
                   >
                     {group.label}
