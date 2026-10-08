@@ -2256,7 +2256,7 @@ const TailTerminal = memo(function TailTerminal({
       >
         {entries.length === 0 ? (
           <div className="flex items-center justify-center h-full min-h-[120px]">
-            <span className="text-slate-400 text-xs font-mono animate-pulse">Waiting for log entries…</span>
+            <span className="text-slate-400 text-xs animate-pulse">Waiting for log entries…</span>
           </div>
         ) : wrapLines ? (
           /* Wrap mode: variable-height virtual list via @tanstack/react-virtual */
@@ -2573,7 +2573,7 @@ const EntryRow = memo(function EntryRow({
                 )}
                 {status && (
                   <span className={cn(
-                    "text-[10px] font-mono px-1 py-0.5 rounded leading-none",
+                    "text-[10px] px-1 py-0.5 rounded leading-none",
                     status === "SUCCESSFUL" ? "text-emerald-700 bg-emerald-50" : status === "FAILED" ? "text-red-700 bg-red-50" : "text-slate-500 bg-slate-50"
                   )}>
                     {status}
@@ -4278,7 +4278,7 @@ export function LogsExplorer({
                       const n = parseInt(e.target.value, 10);
                       if (!isNaN(n) && n >= 1 && n <= matchRows.length) navigateToMatch(n - 1);
                     }}
-                    className="w-12 text-center text-[11px] rounded border border-slate-300 px-1 py-0.5 font-mono focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="w-12 text-center text-[11px] rounded border border-slate-300 px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                   <span>/ {matchIndices.length}</span>
                 </div>
@@ -4627,13 +4627,13 @@ export function LogsExplorer({
           {viewMode === "terminal" ? (
             !fetched && !tailing ? (
               <div className="flex items-center justify-center h-full min-h-[160px]">
-                <p className="text-sm text-slate-400 font-mono">
+                <p className="text-sm text-slate-400">
                   {anchorTimestamp ? "Loading context…" : "Select sources and start tailing or run a search"}
                 </p>
               </div>
             ) : deferredIsActive && filtered.length === 0 && fetched && !searching ? (
               <div className="flex items-center justify-center h-full min-h-[160px]">
-                <p className="text-sm text-slate-400 font-mono">
+                <p className="text-sm text-slate-400">
                   {entries.length === 0 ? "No log entries returned." : "No entries match the filter."}
                 </p>
               </div>
@@ -4880,7 +4880,7 @@ export function LogsExplorer({
                   </svg>
                   <span>
                     Hit a 429 from AIC — per-page delay auto-raised to{" "}
-                    <span className="font-mono font-semibold">{rateLimitDelayMs} ms</span>
+                    <span className="font-semibold">{rateLimitDelayMs} ms</span>
                     . You can override the value in the Delay box.
                   </span>
                 </div>
@@ -4944,7 +4944,7 @@ export function LogsExplorer({
                         setRateLimitDelayMs(clamped);
                         workerRef.current?.postMessage({ type: "set-rate-limit-delay", value: clamped, reason: "user" });
                       }}
-                      className="w-16 text-[11px] font-mono px-1 py-0 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-sky-500 bg-white"
+                      className="w-16 text-[11px] px-1 py-0 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-sky-500 bg-white"
                     />
                     <span className="text-slate-400">ms</span>
                   </label>
@@ -5013,7 +5013,7 @@ export function LogsExplorer({
           <div className="flex items-center justify-between px-4 py-2 border-t border-slate-200 bg-slate-50 shrink-0">
             <div className="flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="text-xs text-slate-600 font-mono">
+              <span className="text-xs text-slate-600">
                 {loading
                   ? `Fetching…`
                   : lastUpdated
@@ -5021,7 +5021,7 @@ export function LogsExplorer({
                     : `Starting…`}
               </span>
               {tailTotalReceived > 0 && (
-                <span className="text-xs text-slate-400 font-mono">
+                <span className="text-xs text-slate-400">
                   · {tailTotalReceived.toLocaleString()} total
                   {tailDropped > 0 && ` · ${entries.length.toLocaleString()} in buffer`}
                 </span>
