@@ -291,7 +291,7 @@ function ItemProgressPanel({
                     <span
                       key={item}
                       className={cn(
-                        "inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded font-mono ring-1 transition-colors",
+                        "inline-flex items-center gap-1 px-1.5 py-0.5 text-[10px] rounded ring-1 transition-colors",
                         st === "done"    && "bg-emerald-50 text-emerald-700 ring-emerald-200",
                         st === "failed"  && "bg-rose-50 text-rose-700 ring-rose-200",
                         st === "pending" && "bg-slate-50 text-slate-500 ring-slate-200",
@@ -1164,7 +1164,7 @@ function FrConfigSection({
       {(running || dccBusy || mergedLogs.length > 0) && (
         <div className="space-y-2">
           {targetIsControlled && dccState && (
-            <div className="px-3 py-1.5 rounded bg-slate-50 border border-slate-200 text-[11px] text-slate-600 font-mono">
+            <div className="px-3 py-1.5 rounded bg-slate-50 border border-slate-200 text-[11px] text-slate-600">
               DCC session: <span className="text-slate-800">{dccState}</span>
               {dccBusy && <span className="ml-2 text-sky-600 animate-pulse">●</span>}
             </div>
@@ -1237,7 +1237,7 @@ function FrodoSection({
       </p>
       <div className="flex flex-wrap gap-1.5">
         {frodoScopes.map((s) => (
-          <span key={s} className="px-2 py-0.5 rounded text-[11px] bg-purple-50 text-purple-700 border border-purple-200 font-mono">
+          <span key={s} className="px-2 py-0.5 rounded text-[11px] bg-purple-50 text-purple-700 border border-purple-200">
             {scopeLabel(s)}
           </span>
         ))}
@@ -1289,7 +1289,7 @@ function IgaSection({
       </p>
       <div className="flex flex-wrap gap-1.5">
         {igaScopes.map((s) => (
-          <span key={s} className="px-2 py-0.5 rounded text-[11px] bg-teal-50 text-teal-700 border border-teal-200 font-mono">
+          <span key={s} className="px-2 py-0.5 rounded text-[11px] bg-teal-50 text-teal-700 border border-teal-200">
             {scopeLabel(s)}
           </span>
         ))}
