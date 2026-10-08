@@ -2430,7 +2430,7 @@ function AllFilesModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden" style={{ width: "90vw", maxWidth: 1200, height: "90vh" }}>
+      <div className="bg-tile rounded-[18px] ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)] flex flex-col overflow-hidden" style={{ width: "90vw", maxWidth: 1200, height: "90vh" }}>
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
           <div className="flex-1 min-w-0">
@@ -2574,7 +2574,7 @@ function TaskItemsDrawer({
   return (
     <div className="fixed inset-0 z-50 bg-overlay" onClick={onClose}>
       <aside
-        className="fixed right-0 top-0 h-full w-[min(640px,100vw)] bg-white shadow-2xl flex flex-col"
+        className="fixed right-0 top-0 h-full w-[min(640px,100vw)] bg-tile border-l border-line-2 shadow-[var(--popover-shadow)] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

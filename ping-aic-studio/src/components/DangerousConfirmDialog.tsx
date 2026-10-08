@@ -73,7 +73,7 @@ export function DangerousConfirmDialog(props: Props) {
     <Dialog.Root open={open} onOpenChange={(v) => { if (!v) onCancel(); }}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-overlay backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(560px,calc(100vw-32px))] bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(560px,calc(100vw-32px))] bg-tile rounded-[18px] ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)] overflow-hidden">
           <div className="flex items-start gap-4 p-5 border-b border-slate-100">
             <div className="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5" />

@@ -96,7 +96,7 @@ export function ItemViewer({ environment, scope, item, onClose }: ItemViewerProp
             // h-[85vh] (fixed) rather than max-h-[85vh] (cap) so the canvas
             // children — JourneyGraph / WorkflowGraph — that ask for h-full
             // actually get a defined height to resolve against.
-            : "bg-white rounded-lg shadow-xl w-[1040px] max-w-[95vw] h-[85vh]"
+            : "bg-tile rounded-xl ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)] w-[1040px] max-w-[95vw] h-[85vh]"
         )}
       >
         {/* Header */}

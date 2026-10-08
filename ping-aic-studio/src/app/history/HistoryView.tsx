@@ -72,11 +72,11 @@ function RecordDrawer({
 }) {
   return (
     <div
-      className="fixed left-0 right-0 bottom-0 top-14 z-40 bg-overlay"
+      className="fixed left-0 right-0 bottom-0 top-[var(--app-header-h,58px)] z-40 bg-overlay"
       onClick={onClose}
     >
       <aside
-        className="fixed right-0 top-14 bottom-0 w-[min(560px,100vw)] bg-white shadow-2xl overflow-y-auto"
+        className="fixed right-0 top-[var(--app-header-h,58px)] bottom-0 w-[min(560px,100vw)] bg-tile border-l border-line-2 shadow-[var(--popover-shadow)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}

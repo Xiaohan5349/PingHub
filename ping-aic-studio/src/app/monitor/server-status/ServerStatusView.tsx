@@ -448,7 +448,7 @@ function DetailDrawer({
                 onClick={onClose}
                 aria-hidden="true"
             />
-            <div className="ml-auto h-full w-full max-w-lg bg-white shadow-xl flex flex-col relative">
+            <div className="ml-auto h-full w-full max-w-lg bg-tile border-l border-line-2 shadow-[var(--popover-shadow)] flex flex-col relative">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200">
                     <div>
                         <div className="text-sm font-semibold text-slate-900">{target.label}</div>

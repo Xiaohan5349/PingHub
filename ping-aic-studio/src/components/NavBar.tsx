@@ -101,6 +101,18 @@ export function NavBar() {
     fetch("/api/environments").then((r) => r.ok ? r.json() : []).then(setEnvs).catch(() => { });
   }, []);
 
+  // Publish the header's height (it grows with the sub-tab row and wraps on
+  // phones) so panels that sit below it, like the History drawer, can align.
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el) return;
+    const set = () => document.documentElement.style.setProperty("--app-header-h", `${el.offsetHeight}px`);
+    set();
+    const ro = new ResizeObserver(set);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
   // Close the menu on navigation, Escape, or a click outside the header.
   useEffect(() => { setOpenGroup(null); }, [pathname]);
   useEffect(() => {

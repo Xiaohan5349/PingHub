@@ -816,7 +816,7 @@ function WorkflowGraphInner({ workflow, workflowId, files }: {
                 <div
                   ref={modalRef}
                   tabIndex={-1}
-                  className="bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden outline-none"
+                  className="bg-tile rounded-[18px] ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)] flex flex-col overflow-hidden outline-none"
                   style={{ width: "60vw", maxWidth: 960, height: "60vh", maxHeight: "90vh" }}
                   onClick={(e) => e.stopPropagation()}
                 >
