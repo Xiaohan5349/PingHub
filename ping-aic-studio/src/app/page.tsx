@@ -187,7 +187,8 @@ function UpcomingUpgradesTile({ items, className }: { items: UpgradeItem[]; clas
           {rest.map((x) => (
             <li key={x.env.name} className="flex items-baseline justify-between gap-2 text-[13px]">
               <span className="text-ink font-medium truncate">
-                {x.env.label} <span className="font-mono text-xs text-ink-3">{x.env.name}</span>
+                {x.env.label}
+                {x.env.name !== x.env.label && <span className="font-mono text-xs text-ink-3"> {x.env.name}</span>}
               </span>
               <span className={x.urgency === "overdue" ? "text-rose-600" : "text-amber-600"}>
                 {x.urgency === "overdue"
@@ -208,7 +209,10 @@ function UpgradeFacts({ item }: { item: UpgradeItem }) {
   return (
     <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[13px]">
       <dt className="text-ink-3">Environment</dt>
-      <dd className="text-ink font-medium">{item.env.label} <span className="font-mono text-ink-3">{item.env.name}</span></dd>
+      <dd className="text-ink font-medium">
+        {item.env.label}
+        {item.env.name !== item.env.label && <span className="font-mono text-ink-3"> {item.env.name}</span>}
+      </dd>
       {planned && (
         <>
           <dt className="text-ink-3">Planned</dt>

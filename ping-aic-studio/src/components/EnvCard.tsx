@@ -58,7 +58,9 @@ export function EnvCard({ env, health, healthInfo, lastPull, lastPush, release, 
           <div className="flex items-center gap-2 min-w-0">
             <span className={cn("w-2 h-2 rounded-full shrink-0", DOT[env.color] ?? DOT.slate)} />
             <span className="font-semibold text-base text-ink truncate">{env.label}</span>
-            <span className="font-mono text-xs text-ink-3 shrink-0">{env.name}</span>
+            {env.name !== env.label && (
+              <span className="font-mono text-xs text-ink-3 shrink-0">{env.name}</span>
+            )}
           </div>
           {env.baseUrl && (
             <div className="mt-1 text-xs text-ink-3 font-mono truncate" title={env.baseUrl}>{env.baseUrl}</div>
