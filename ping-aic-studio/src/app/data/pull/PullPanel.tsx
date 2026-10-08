@@ -343,7 +343,7 @@ export function PullPanel({
                 />
                 <span className="font-mono text-slate-700 flex-1 truncate">{t}</span>
                 {isProbing ? (
-                  <span className="text-[10px] text-sky-700 font-mono tabular-nums">
+                  <span className="text-[10px] text-sky-700 tabular-nums">
                     {prog
                       ? <>probing… {prog.fetched.toLocaleString()}<span className="text-sky-400">/p{prog.pages}</span></>
                       : "probing…"}
@@ -355,8 +355,8 @@ export function PullPanel({
                     const className = c === null
                       ? "text-[10px] text-slate-400 italic cursor-help"
                       : isSnapshotSourced
-                        ? "text-[10px] text-slate-500 italic font-mono tabular-nums cursor-help"
-                        : "text-[10px] text-slate-500 font-mono tabular-nums";
+                        ? "text-[10px] text-slate-500 italic tabular-nums cursor-help"
+                        : "text-[10px] text-slate-500 tabular-nums";
                     const title = c === null
                       ? (reason ?? "Tenant declined to report a count")
                       : isSnapshotSourced
