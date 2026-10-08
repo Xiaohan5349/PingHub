@@ -830,8 +830,8 @@ function FileRow({ file, sourceLabel, targetLabel, extraActions, checked, onTogg
               onClick={() => setWrap((w) => !w)}
               title="Toggle line wrap"
               className={cn(
-                "px-2 py-0.5 text-[10px] rounded border transition-colors",
-                wrap ? "bg-slate-900 text-white border-slate-900" : "text-slate-500 border-slate-300 hover:bg-slate-100"
+                "toggle-chip",
+                wrap && "toggle-chip-on"
               )}
             >
               Wrap
@@ -841,8 +841,8 @@ function FileRow({ file, sourceLabel, targetLabel, extraActions, checked, onTogg
               onClick={() => setFormat((f) => !f)}
               title="Auto-format content (JSON / JS / Groovy)"
               className={cn(
-                "px-2 py-0.5 text-[10px] rounded border transition-colors",
-                format ? "bg-slate-900 text-white border-slate-900" : "text-slate-500 border-slate-300 hover:bg-slate-100"
+                "toggle-chip",
+                format && "toggle-chip-on"
               )}
             >
               Format
