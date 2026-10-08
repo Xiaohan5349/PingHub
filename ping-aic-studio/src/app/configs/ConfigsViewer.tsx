@@ -556,7 +556,7 @@ function TreeView({ environment }: { environment: string }) {
 
       {/* Right panel */}
       <div className={cn(
-        "flex flex-col bg-slate-900 overflow-hidden",
+        "flex flex-col bg-slate-900 code-surface overflow-hidden",
         fullscreen ? "fixed inset-0 z-50 rounded-none border-0" : "flex-1 rounded-lg border border-slate-200"
       )}>
         {selectedFile ? (
@@ -1555,7 +1555,7 @@ function SectionsView({
       <div className={cn(
         "flex flex-col overflow-hidden min-w-0",
         fullscreen ? "fixed inset-0 z-50" : "flex-1",
-        selectedItem && (selectedScope === "journeys" || selectedScope === "iga-workflows") ? "bg-slate-50" : "bg-slate-900"
+        selectedItem && (selectedScope === "journeys" || selectedScope === "iga-workflows") ? "bg-slate-50" : "bg-slate-900 code-surface"
       )}>
         {selectedItem ? (
           <>

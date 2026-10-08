@@ -377,7 +377,7 @@ function TestLogApiButton({
 
       {logs.length > 0 && (
         <div className="rounded-md overflow-hidden border border-slate-700">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border-b border-slate-700">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 code-surface border-b border-slate-700">
             <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", statusDot)} />
             <span className={cn("text-xs font-mono", statusColor)}>
               {running
@@ -387,7 +387,7 @@ function TestLogApiButton({
                     : ""}
             </span>
           </div>
-          <div className="bg-slate-900 p-3 font-mono text-xs max-h-48 overflow-y-auto">
+          <div className="bg-slate-900 code-surface p-3 font-mono text-xs max-h-48 overflow-y-auto">
             {logs.map((entry, i) => (
               <div
                 key={i}
@@ -783,11 +783,11 @@ function FrConfigControls({
 
       {terminal && (
         <div className="rounded-md overflow-hidden border border-slate-700">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border-b border-slate-700">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 code-surface border-b border-slate-700">
             <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", headerDot)} />
             <span className={cn("text-xs font-mono", headerColor)}>{terminal.headerLabel}</span>
           </div>
-          <div className="bg-slate-900 p-3 font-mono text-xs max-h-48 overflow-y-auto">
+          <div className="bg-slate-900 code-surface p-3 font-mono text-xs max-h-48 overflow-y-auto">
             {terminal.lines.map((line, i) => (
               <div
                 key={i}
@@ -1172,7 +1172,7 @@ export const EnvEditor = forwardRef<EnvEditorHandle, EnvEditorProps>(function En
                     value={rawContent}
                     onChange={(e) => setRawContent(e.target.value)}
                     spellCheck={false}
-                    className="w-full h-96 font-mono text-sm p-4 focus:outline-none resize-none text-green-300 bg-slate-900"
+                    className="w-full h-96 font-mono text-sm p-4 focus:outline-none resize-none text-green-300 bg-slate-900 code-surface"
                     placeholder={`TENANT_BASE_URL=https://your-tenant.forgeblocks.com/am\nSERVICE_ACCOUNT_ID=\nSERVICE_ACCOUNT_KEY=\nCONFIG_DIR=./config\nSCRIPT_PREFIXES=[]`}
                   />
                 </div>

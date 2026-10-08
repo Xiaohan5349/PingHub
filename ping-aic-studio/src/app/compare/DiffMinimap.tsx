@@ -75,7 +75,7 @@ export function DiffMinimap({
   return (
     <div
       ref={containerRef}
-      className="relative shrink-0 w-14 bg-slate-950 border-l border-slate-800 cursor-pointer select-none overflow-hidden"
+      className="relative shrink-0 w-14 bg-slate-950 code-surface border-l border-slate-800 cursor-pointer select-none overflow-hidden"
       onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); seek(e); }}
       onPointerMove={seek}
     >

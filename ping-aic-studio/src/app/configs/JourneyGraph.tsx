@@ -1021,7 +1021,7 @@ function NodeInfoDrawer({
                         </button>
                       </div>
                       {/* Code preview */}
-                      <div className="flex-1 overflow-auto bg-slate-950">
+                      <div className="flex-1 overflow-auto bg-slate-950 code-surface">
                         <pre
                           className="text-[10px] font-mono leading-relaxed p-3 text-slate-300"
                           dangerouslySetInnerHTML={{ __html: scriptHighlighted! }}
@@ -1861,7 +1861,7 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
             if (displayView === "table") return <div className="h-full overflow-auto"><JourneyTableView json={activeJson} environment={environment} journeyId={activeJourneyId} /></div>;
             if (displayView === "swimlane") return <div className="h-full overflow-auto"><JourneySwimLaneView json={activeJson} /></div>;
             if (displayView === "json") return (
-              <div className="h-full overflow-auto bg-slate-950 p-4">
+              <div className="h-full overflow-auto bg-slate-950 code-surface p-4">
                 <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap break-all">{activeJson}</pre>
               </div>
             );
@@ -2059,7 +2059,7 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
                   {previewModal.loading ? (
                     <div className="flex items-center justify-center h-full text-sm text-slate-400">Loading…</div>
                   ) : previewModal.nodeType === "ScriptedDecisionNode" ? (
-                    <div className="h-full flex flex-col overflow-hidden bg-slate-950">
+                    <div className="h-full flex flex-col overflow-hidden bg-slate-950 code-surface">
                       {previewModal.scriptName && (
                         <p className="px-4 pt-3 pb-1 text-[10px] font-medium text-slate-400 shrink-0">{previewModal.scriptName}</p>
                       )}

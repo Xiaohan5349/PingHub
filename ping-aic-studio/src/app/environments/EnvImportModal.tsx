@@ -134,7 +134,7 @@ export function EnvImportModal({ open, onOpenChange, liveEnvironments, onImporte
     return (
         <Dialog.Root open={open} onOpenChange={handleOpenChange}>
             <Dialog.Portal>
-                <Dialog.Overlay className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in" />
+                <Dialog.Overlay className="fixed inset-0 bg-overlay backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in" />
                 <Dialog.Content className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(720px,calc(100vw-32px))] max-h-[calc(100vh-48px)] overflow-y-auto bg-white rounded-2xl shadow-2xl">
                     <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
                         <Dialog.Title className="text-base font-semibold text-slate-900">Import environments</Dialog.Title>

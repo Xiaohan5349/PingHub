@@ -72,7 +72,7 @@ function RecordDrawer({
 }) {
   return (
     <div
-      className="fixed left-0 right-0 bottom-0 top-14 z-40 bg-slate-900/40"
+      className="fixed left-0 right-0 bottom-0 top-14 z-40 bg-overlay"
       onClick={onClose}
     >
       <aside
@@ -216,7 +216,7 @@ function RecordDrawer({
           {"logs" in record && record.logs ? (
             <div>
               <div className="label-xs mb-2">LOGS</div>
-              <pre className="text-[11px] bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto whitespace-pre-wrap break-all">
+              <pre className="text-[11px] bg-slate-900 code-surface text-slate-100 p-4 rounded-lg overflow-x-auto whitespace-pre-wrap break-all">
                 {String((record as { logs: unknown }).logs)}
               </pre>
             </div>

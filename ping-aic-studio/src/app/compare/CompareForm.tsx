@@ -78,13 +78,13 @@ function EndpointSelector({
 function LocalPanel({ envName, done }: { envName: string; done: boolean }) {
   return (
     <div className="flex flex-col">
-      <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 border-b border-slate-700">
+      <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 code-surface border-b border-slate-700">
         <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", done ? "bg-green-400" : "bg-slate-500")} />
         <span className="text-xs font-mono text-slate-400">
           {done ? "Local config ready" : "Local config"}
         </span>
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center py-10 bg-slate-900 text-center">
+      <div className="flex-1 flex flex-col items-center justify-center py-10 bg-slate-900 code-surface text-center">
         <svg className="w-6 h-6 text-slate-600 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
         </svg>

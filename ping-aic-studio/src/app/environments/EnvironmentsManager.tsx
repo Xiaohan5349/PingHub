@@ -725,7 +725,7 @@ export function EnvironmentsManager({
       {/* Edit dialog */}
       <Dialog.Root open={editing !== null} onOpenChange={(open) => { if (!open) openEditor(null); }}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in" />
+          <Dialog.Overlay className="fixed inset-0 bg-overlay backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in" />
           <Dialog.Content
             className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(900px,calc(100vw-32px))] max-h-[calc(100vh-48px)] overflow-y-auto bg-white rounded-2xl shadow-2xl"
           >

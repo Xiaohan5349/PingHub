@@ -444,7 +444,7 @@ function DetailDrawer({
     return (
         <div className="fixed inset-0 z-40 flex" role="dialog">
             <div
-                className="absolute inset-0 bg-slate-900/40"
+                className="absolute inset-0 bg-overlay"
                 onClick={onClose}
                 aria-hidden="true"
             />

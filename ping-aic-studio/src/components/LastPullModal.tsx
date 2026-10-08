@@ -108,7 +108,7 @@ function LastPullModal({
   return (
     <Dialog.Root open={open} onOpenChange={(o) => !o && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-slate-900/30 z-40" />
+        <Dialog.Overlay className="fixed inset-0 bg-overlay z-40" />
         <Dialog.Content
           className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-2xl max-h-[80vh] bg-white rounded-lg shadow-xl z-50 flex flex-col overflow-hidden"
           onPointerDownOutside={(e) => e.stopPropagation()}

@@ -404,7 +404,7 @@ function StepDrawer({
                           </svg>
                         </button>
                       </div>
-                      <div className="flex-1 overflow-auto bg-slate-950">
+                      <div className="flex-1 overflow-auto bg-slate-950 code-surface">
                         <pre className="text-[10px] font-mono leading-relaxed p-3 text-slate-300"
                           dangerouslySetInnerHTML={{ __html: scriptHighlighted! }} />
                       </div>
@@ -748,7 +748,7 @@ function WorkflowGraphInner({ workflow, workflowId, files }: {
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 relative">
         {displayView === "json" ? (
-          <div className="h-full overflow-auto bg-slate-950 p-4">
+          <div className="h-full overflow-auto bg-slate-950 code-surface p-4">
             <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap break-all">
               {(() => { try { return JSON.stringify(JSON.parse(topLevelJson), null, 2); } catch { return topLevelJson; } })()}
             </pre>
@@ -867,7 +867,7 @@ function WorkflowGraphInner({ workflow, workflowId, files }: {
                     </button>
                   </div>
                   {/* Script content */}
-                  <div className="flex-1 min-h-0 overflow-hidden bg-slate-950">
+                  <div className="flex-1 min-h-0 overflow-hidden bg-slate-950 code-surface">
                     <p className="px-4 pt-3 pb-1 text-[10px] font-medium text-slate-400 shrink-0">{previewModal.scriptFileName}</p>
                     <div className="overflow-auto h-full">
                       <pre

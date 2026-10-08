@@ -231,7 +231,7 @@ function DiffViewer({ lines, fullscreen, wrap }: { lines: DiffLine[]; fullscreen
   let lineIdx = 0;
 
   return (
-    <div className={cn("flex bg-slate-950 overflow-hidden", fullscreen ? "flex-1 min-h-0" : "max-h-[600px]")}>
+    <div className={cn("flex bg-slate-950 code-surface overflow-hidden", fullscreen ? "flex-1 min-h-0" : "max-h-[600px]")}>
       <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-auto text-[11px] font-mono leading-5">
         <table className="min-w-full border-collapse">
           <tbody>
@@ -240,7 +240,7 @@ function DiffViewer({ lines, fullscreen, wrap }: { lines: DiffLine[]; fullscreen
                 const si = item.startIdx;
                 lineIdx += item.count;
                 return (
-                  <tr key={`e-${hi}`} className="bg-slate-900">
+                  <tr key={`e-${hi}`} className="bg-slate-900 code-surface">
                     <td colSpan={4} className="py-0.5 px-3 text-center">
                       <button
                         onClick={() => setExpanded((prev) => { const s = new Set(prev); s.has(si) ? s.delete(si) : s.add(si); return s; })}
@@ -408,7 +408,7 @@ function SideBySideViewer({
 
   return (
     <div className={cn(
-      "flex divide-x divide-slate-700 bg-slate-950 overflow-hidden",
+      "flex divide-x divide-slate-700 bg-slate-950 code-surface overflow-hidden",
       fullscreen ? "flex-1 min-h-0" : "h-[600px]"
     )}>
       <FilePane
@@ -451,8 +451,8 @@ const PANE_STYLES: Record<DiffMode, PaneStyle> = {
   compare: {
     bg: {
       context: { left: "", right: "" },
-      leftOnly: { left: "bg-red-950", right: "bg-slate-900" },
-      rightOnly: { left: "bg-slate-900", right: "bg-emerald-950" },
+      leftOnly: { left: "bg-red-950", right: "bg-slate-900 code-surface" },
+      rightOnly: { left: "bg-slate-900 code-surface", right: "bg-emerald-950" },
       changed: { left: "bg-red-950", right: "bg-emerald-950" },
     },
     text: {
@@ -466,8 +466,8 @@ const PANE_STYLES: Record<DiffMode, PaneStyle> = {
   "dry-run": {
     bg: {
       context: { left: "", right: "" },
-      leftOnly: { left: "bg-emerald-950", right: "bg-slate-900" },
-      rightOnly: { left: "bg-slate-900", right: "bg-red-950" },
+      leftOnly: { left: "bg-emerald-950", right: "bg-slate-900 code-surface" },
+      rightOnly: { left: "bg-slate-900 code-surface", right: "bg-red-950" },
       changed: { left: "bg-emerald-950", right: "bg-red-950" },
     },
     text: {
@@ -495,7 +495,7 @@ function FilePane({
   const style = PANE_STYLES[mode];
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      <div className="px-3 py-1.5 bg-slate-800 border-b border-slate-700 shrink-0">
+      <div className="px-3 py-1.5 bg-slate-800 code-surface border-b border-slate-700 shrink-0">
         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{label}</span>
       </div>
       {rows ? (
@@ -670,9 +670,9 @@ function FileRow({ file, sourceLabel, targetLabel, extraActions, checked, onTogg
 
   if (fullscreen && open) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col">
+      <div className="fixed inset-0 z-50 bg-slate-950 code-surface flex flex-col">
         {/* Fullscreen header */}
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 border-b border-slate-800 shrink-0">
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 code-surface border-b border-slate-800 shrink-0">
           <span className={cn("inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold shrink-0", s.badge)}>
             {s.icon}
           </span>
@@ -1854,7 +1854,7 @@ function FilePreviewModal({ env, path, line, onClose }: { env: string; path: str
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-[min(1100px,calc(100vw-40px))] h-[min(800px,calc(100vh-40px))] flex flex-col overflow-hidden"
+        className="bg-slate-900 code-surface border border-slate-700 rounded-lg shadow-2xl w-[min(1100px,calc(100vw-40px))] h-[min(800px,calc(100vh-40px))] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-700 bg-slate-800 shrink-0">
@@ -2572,7 +2572,7 @@ function TaskItemsDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-overlay" onClick={onClose}>
       <aside
         className="fixed right-0 top-0 h-full w-[min(640px,100vw)] bg-white shadow-2xl flex flex-col"
         onClick={(e) => e.stopPropagation()}

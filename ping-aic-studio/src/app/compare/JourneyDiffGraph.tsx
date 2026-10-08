@@ -514,7 +514,7 @@ function UnchangedScriptViewer({ name, content }: { name: string; content: strin
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" /></svg>
           </button>
         </div>
-        <div className="bg-slate-950 overflow-auto max-h-64">
+        <div className="bg-slate-950 code-surface overflow-auto max-h-64">
           <pre className="text-[9px] font-mono leading-relaxed p-2 text-slate-300" dangerouslySetInnerHTML={{ __html: highlighted }} />
         </div>
       </div>
@@ -559,9 +559,9 @@ function ScriptFileEntry({ f }: { f: FileDiff }) {
   return (
     <>
       {fullscreen && (
-        <div className="fixed inset-0 z-[80] flex flex-col bg-slate-950 overflow-hidden">
+        <div className="fixed inset-0 z-[80] flex flex-col bg-slate-950 code-surface overflow-hidden">
           {/* Fullscreen header */}
-          <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900 shrink-0">
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900 code-surface shrink-0">
             <svg className="w-4 h-4 text-violet-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
             </svg>
@@ -781,13 +781,13 @@ function SplitDiffView({ lines, fullscreen }: { lines: DiffLineLocal[]; fullscre
 
   return (
     <div className={cn(
-      "flex bg-slate-950 overflow-hidden",
+      "flex bg-slate-950 code-surface overflow-hidden",
       fullscreen ? "flex-1 min-h-0" : "max-h-[500px]",
     )}>
       <div ref={scrollRef} className="flex-1 overflow-auto text-[10px] font-mono leading-5">
         <table className="w-full border-collapse table-fixed">
           <thead>
-            <tr className="border-b border-slate-700 bg-slate-900 text-[9px] text-slate-500 sticky top-0 z-10">
+            <tr className="border-b border-slate-700 bg-slate-900 code-surface text-[9px] text-slate-500 sticky top-0 z-10">
               <th className="px-3 py-1 text-left font-normal border-r border-slate-700 w-1/2">Source</th>
               <th className="px-3 py-1 text-left font-normal w-1/2">Modified</th>
             </tr>
@@ -821,7 +821,7 @@ function InlineDiffView({ lines }: { lines: DiffLineLocal[] }) {
   const MAX = 300;
   const visible = lines.slice(0, MAX);
   return (
-    <div className="overflow-x-auto overflow-y-auto bg-slate-950 text-[10px] font-mono leading-5 max-h-64">
+    <div className="overflow-x-auto overflow-y-auto bg-slate-950 code-surface text-[10px] font-mono leading-5 max-h-64">
       <table className="min-w-full border-collapse">
         <tbody>
           {visible.map((l, i) => {
@@ -1364,7 +1364,7 @@ function ScriptDiffView({ lines }: { lines: DiffLineLocal[] }) {
               if (item.kind === "hunk") {
                 const count = item.endIdx - item.startIdx + 1;
                 return (
-                  <tr key={`hunk-${item.startIdx}`} className="bg-slate-900">
+                  <tr key={`hunk-${item.startIdx}`} className="bg-slate-900 code-surface">
                     <td colSpan={2} className="py-0.5">
                       <button
                         type="button"
@@ -2242,7 +2242,7 @@ export function JourneyDiffGraphModal({
               if (displayView === "table") return <div className="flex-1 overflow-auto"><JourneyTableView json={json} environment={env} journeyId={active.name} /></div>;
               if (displayView === "swimlane") return <div className="flex-1 overflow-auto"><JourneySwimLaneView json={json} /></div>;
               if (displayView === "json") return (
-                <div className="flex-1 overflow-auto bg-slate-950 p-4">
+                <div className="flex-1 overflow-auto bg-slate-950 code-surface p-4">
                   <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap break-all">{json}</pre>
                 </div>
               );
@@ -2471,7 +2471,7 @@ export function JourneyDiffGraphModal({
               {previewModal.loading ? (
                 <div className="flex items-center justify-center h-full text-sm text-slate-400">Loading…</div>
               ) : previewModal.nodeType === "ScriptedDecisionNode" ? (
-                <div className="h-full flex flex-col overflow-hidden bg-slate-950">
+                <div className="h-full flex flex-col overflow-hidden bg-slate-950 code-surface">
                   {previewModal.scriptName && (
                     <p className="px-4 pt-3 pb-1 text-[10px] font-medium text-slate-400 shrink-0">{previewModal.scriptName}</p>
                   )}

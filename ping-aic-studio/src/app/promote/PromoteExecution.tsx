@@ -1439,7 +1439,7 @@ function FullLog({ logs }: { logs: { type: string; data?: string }[] }) {
         )}
       </div>
       {open && (
-        <div className="bg-slate-900 rounded-lg overflow-auto max-h-96 p-3 font-mono text-[11px] leading-5">
+        <div className="bg-slate-900 code-surface rounded-lg overflow-auto max-h-96 p-3 font-mono text-[11px] leading-5">
           {logs.map((l, i) => (
             <div
               key={i}
@@ -1478,7 +1478,7 @@ function ErrorLogs({ logs }: { logs: { type: string; data?: string }[] }) {
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
-      <div className="bg-slate-900 rounded-lg overflow-auto max-h-64 p-3 font-mono text-[11px] leading-5">
+      <div className="bg-slate-900 code-surface rounded-lg overflow-auto max-h-64 p-3 font-mono text-[11px] leading-5">
         {logs.map((l, i) => (
           <div key={i} className="whitespace-pre-wrap break-all text-red-400">{l.data}</div>
         ))}
