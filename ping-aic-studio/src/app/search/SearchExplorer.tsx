@@ -351,24 +351,24 @@ export function SearchExplorer({ environments }: Props) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+          <div className="seg-sm">
             <button
               type="button"
               title="Case sensitive"
               onClick={() => setMatchCase((v) => !v)}
-              className={cn("px-2 py-0.5 text-[11px] font-medium font-mono transition-colors", matchCase ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50")}
+              className={cn("seg-sm-item font-mono", matchCase && "seg-sm-item-active")}
             >Aa</button>
             <button
               type="button"
               title="Whole word"
               onClick={() => setWholeWord((v) => !v)}
-              className={cn("px-2 py-0.5 text-[11px] font-medium font-mono border-l border-slate-300 transition-colors", wholeWord ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50")}
+              className={cn("seg-sm-item font-mono", wholeWord && "seg-sm-item-active")}
             >[W]</button>
             <button
               type="button"
               title="Regex"
               onClick={() => setRegex((v) => !v)}
-              className={cn("px-2 py-0.5 text-[11px] font-medium font-mono border-l border-slate-300 transition-colors", regex ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50")}
+              className={cn("seg-sm-item font-mono", regex && "seg-sm-item-active")}
             >.*</button>
           </div>
           <input
@@ -383,7 +383,7 @@ export function SearchExplorer({ environments }: Props) {
               type="button"
               onClick={() => setGlob(DEFAULT_GLOB)}
               title={`Reset to default (${DEFAULT_GLOB})`}
-              className="px-2 py-1 text-[11px] rounded border border-slate-300 text-slate-600 bg-white hover:bg-slate-50 transition-colors shrink-0"
+              className="toggle-chip"
             >
               Reset
             </button>
@@ -397,12 +397,7 @@ export function SearchExplorer({ environments }: Props) {
               key={p.label}
               type="button"
               onClick={() => setGlob(p.value)}
-              className={cn(
-                "px-2 py-0.5 text-[11px] rounded border transition-colors",
-                glob === p.value
-                  ? "bg-slate-900 text-white border-slate-900"
-                  : "bg-white text-slate-500 border-slate-300 hover:bg-slate-50"
-              )}
+              className={cn("toggle-chip", glob === p.value && "toggle-chip-on")}
             >
               {p.label}
             </button>
