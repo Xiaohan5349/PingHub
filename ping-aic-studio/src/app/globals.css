@@ -1,5 +1,11 @@
 @import "tailwindcss";
-@import "./palette.css";
+
+/* ── Typography: exactly two families — UI sans and one monospace for code,
+   ids, URLs and versions. Inline styles and .code-mono use the same vars. */
+:root {
+  --font-ui: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-code: "Cascadia Mono", Consolas, "SF Mono", Menlo, ui-monospace, monospace;
+}
 
 /* ── Theme tokens (Bento Grid Dark + derived light) ─────────────────────────
    data-theme on <html> is set before first paint by the script in layout.tsx
@@ -7,22 +13,23 @@
    via the Tailwind colours declared in @theme below; existing class names are
    recoloured through palette.css. */
 :root {
-  --bg: #eceef2;
-  --tile: #ffffff;
-  --tile-2: #f5f6f8;
-  --inset: #f0f2f5;
-  --line: rgba(20, 26, 38, 0.1);
-  --line-2: rgba(20, 26, 38, 0.2);
-  --line-3: rgba(20, 26, 38, 0.36);
-  --ink: #14161b;
-  --ink-2: #4d525b;
-  --ink-3: #646973;
+  /* Light theme: warm paper rather than white (canvas -> tile -> inset). */
+  --bg: #ebe5d9;
+  --tile: #f8f4ed;
+  --tile-2: #f2ede4;
+  --inset: #efe9df;
+  --line: rgba(70, 50, 20, 0.12);
+  --line-2: rgba(70, 50, 20, 0.22);
+  --line-3: rgba(70, 50, 20, 0.38);
+  --ink: #211d17;
+  --ink-2: #51493d;
+  --ink-3: #6b6254;
   --accent: #2c5bd0;
   --accent-weak: rgba(44, 91, 208, 0.1);
-  --on-accent: #ffffff;
-  --hover: rgba(20, 26, 38, 0.035);
-  --overlay: rgba(20, 22, 27, 0.45);
-  --popover-shadow: 0 24px 60px -20px rgba(20, 22, 27, 0.35);
+  --on-accent: #fbf8f2;
+  --hover: rgba(70, 50, 20, 0.045);
+  --overlay: rgba(33, 29, 23, 0.4);
+  --popover-shadow: 0 24px 60px -20px rgba(70, 50, 20, 0.35);
   color-scheme: light;
 }
 
@@ -64,14 +71,14 @@
   --color-on-accent: var(--on-accent);
   --color-hover: var(--hover);
   --color-overlay: var(--overlay);
-  --font-sans: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-  --font-mono: "Cascadia Mono", Consolas, "SF Mono", Menlo, ui-monospace, monospace;
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-code);
 }
 
 body {
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
 }
 
@@ -125,9 +132,7 @@ body {
 /* ── Code viewer typography ──────────────────────────────────────────────── */
 
 .code-mono {
-  font-family:
-    "Cascadia Mono", "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
-    "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family: var(--font-code);
   font-feature-settings: "calt" 0, "liga" 0;
   /* predictable code rendering */
   font-variant-ligatures: none;
@@ -247,8 +252,8 @@ body {
     @apply inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600;
   }
 
-  /* Monospace caption used as a tile heading ("environments / pipeline order"). */
+  /* Small heading at the top of a tile ("Environments in pipeline order"). */
   .tile-caption {
-    @apply font-mono text-xs text-ink-3;
+    @apply text-[13px] font-semibold text-ink-2;
   }
 }
