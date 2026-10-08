@@ -226,40 +226,30 @@ export function MonitorHistoryView() {
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-3 flex-wrap">
-                <div className="inline-flex rounded-md border border-slate-300 overflow-hidden">
+                <div className="seg">
                     <button
                         type="button"
                         onClick={() => handleKindChange("server")}
-                        className={`px-3 py-1.5 text-sm ${kind === "server"
-                                ? "bg-indigo-600 text-white"
-                                : "bg-white text-slate-700 hover:bg-slate-100"
-                            }`}
+                        className={`seg-item ${kind === "server" ? "seg-item-active" : ""}`}
                     >
                         Server Status
                     </button>
                     <button
                         type="button"
                         onClick={() => handleKindChange("tls")}
-                        className={`px-3 py-1.5 text-sm border-l border-slate-300 ${kind === "tls"
-                                ? "bg-indigo-600 text-white"
-                                : "bg-white text-slate-700 hover:bg-slate-100"
-                            }`}
+                        className={`seg-item ${kind === "tls" ? "seg-item-active" : ""}`}
                     >
                         TLS Expiration
                     </button>
                 </div>
 
-                <div className="inline-flex rounded-md border border-slate-300 overflow-hidden">
-                    {RANGES.map((r, i) => (
+                <div className="seg">
+                    {RANGES.map((r) => (
                         <button
                             key={r.label}
                             type="button"
                             onClick={() => setHours(r.hours)}
-                            className={`px-3 py-1.5 text-sm ${i > 0 ? "border-l border-slate-300" : ""
-                                } ${hours === r.hours
-                                    ? "bg-slate-800 text-white"
-                                    : "bg-white text-slate-700 hover:bg-slate-100"
-                                }`}
+                            className={`seg-item ${hours === r.hours ? "seg-item-active" : ""}`}
                         >
                             {r.label}
                         </button>
