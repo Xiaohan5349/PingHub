@@ -88,7 +88,7 @@ export function PushAudit({
                 <span className="flex-1 text-xs text-slate-700">{scopeLabel(a.scope)}</span>
                 <span
                   className={cn(
-                    "text-xs tabular-nums font-mono",
+                    "text-xs tabular-nums",
                     a.fileCount === 0 ? "text-amber-500" : "text-slate-400"
                   )}
                 >

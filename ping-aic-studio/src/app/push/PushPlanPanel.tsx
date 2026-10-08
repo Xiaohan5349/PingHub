@@ -200,7 +200,7 @@ function ScopeRow({
         <span className="flex-1 text-xs font-medium text-slate-700">{scopeLabel(entry.scope)}</span>
 
         {entry.selectable && hasItems && (
-          <span className="text-[10px] text-slate-400 tabular-nums font-mono">
+          <span className="text-[10px] text-slate-400 tabular-nums">
             {checkedCount}/{entry.items.length}
           </span>
         )}
