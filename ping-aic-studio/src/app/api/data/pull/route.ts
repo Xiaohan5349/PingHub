@@ -10,8 +10,7 @@ import { getRegistry, JobConflictError } from "@/lib/data/job-registry";
 import { runPull } from "@/lib/data/pull-runner";
 import { getEnvironments } from "@/lib/fr-config";
 
-import { getController, setController, deleteController } from "./route-controllers";
-export { getController };
+import { setController, deleteController } from "./route-controllers";
 
 export const dynamic = "force-dynamic";
 
