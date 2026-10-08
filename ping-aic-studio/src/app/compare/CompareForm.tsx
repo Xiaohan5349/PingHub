@@ -80,7 +80,7 @@ function LocalPanel({ envName, done }: { envName: string; done: boolean }) {
     <div className="flex flex-col">
       <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 code-surface border-b border-slate-700">
         <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", done ? "bg-green-400" : "bg-slate-500")} />
-        <span className="text-xs font-mono text-slate-400">
+        <span className="text-xs text-slate-400">
           {done ? "Local config ready" : "Local config"}
         </span>
       </div>
