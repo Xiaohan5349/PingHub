@@ -1717,7 +1717,7 @@ function JourneyTreeSection({ tree, forceOpen: parentForceOpen, forceSeq: parent
             <button type="button" onClick={collapseAll} className="text-[10px] text-slate-500 hover:text-slate-700 transition-colors shrink-0">Collapse All</button>
             <span className="text-slate-300 shrink-0">|</span>
             {/* Status filter pills */}
-            <div className="flex rounded border border-slate-300 overflow-hidden text-[10px] shrink-0">
+            <div className="seg-sm">
               {([
                 { value: "all" as JourneyStatusFilter, label: "All" },
                 { value: "modified" as JourneyStatusFilter, label: `Modified (${counts.modified})` },
@@ -1729,10 +1729,8 @@ function JourneyTreeSection({ tree, forceOpen: parentForceOpen, forceSeq: parent
                   type="button"
                   onClick={() => { setStatusFilter(f.value); setPage(0); }}
                   className={cn(
-                    "px-2 py-0.5 transition-colors",
-                    statusFilter === f.value
-                      ? "bg-slate-900 text-white"
-                      : "bg-white text-slate-500 hover:bg-slate-50"
+                    "seg-sm-item",
+                    statusFilter === f.value && "seg-sm-item-active"
                   )}
                 >
                   {f.label}
@@ -2335,7 +2333,7 @@ function AllFilesModalScopeSection({
       {open && (
         <div className="bg-white">
           <div className="px-3 pt-3 pb-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <div className="flex rounded border border-slate-300 overflow-hidden text-[10px] shrink-0">
+            <div className="seg-sm">
               {([
                 { value: "all" as const, label: `All (${group.files.length})` },
                 { value: "modified" as const, label: `Modified (${group.modified})` },
@@ -2348,8 +2346,8 @@ function AllFilesModalScopeSection({
                   type="button"
                   onClick={() => { setStatusFilter(f.value); setPage(0); }}
                   className={cn(
-                    "px-2 py-0.5 transition-colors",
-                    statusFilter === f.value ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                    "seg-sm-item",
+                    statusFilter === f.value && "seg-sm-item-active"
                   )}
                 >
                   {f.label}
@@ -2965,7 +2963,7 @@ function ScopeSection({
               {/* Row 1: status pills + optional type filter */}
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Status filter pills */}
-                <div className="flex rounded border border-slate-300 overflow-hidden text-[10px] shrink-0">
+                <div className="seg-sm">
                   {([
                     { value: "all" as const, label: `All (${hideUnchanged ? totalChanged : group.files.length})` },
                     { value: "modified" as const, label: `Modified (${group.modified})` },
@@ -2977,10 +2975,8 @@ function ScopeSection({
                       type="button"
                       onClick={() => { setStatusFilter(f.value); setPage(0); }}
                       className={cn(
-                        "px-2 py-0.5 transition-colors",
-                        statusFilter === f.value
-                          ? "bg-slate-900 text-white"
-                          : "bg-white text-slate-500 hover:bg-slate-50"
+                        "seg-sm-item",
+                        statusFilter === f.value && "seg-sm-item-active"
                       )}
                     >
                       {f.label}
