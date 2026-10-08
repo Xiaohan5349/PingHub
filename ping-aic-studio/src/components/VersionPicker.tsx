@@ -604,7 +604,7 @@ function renderHistoryRows({ entries, loading, error, isDark, activeSha, onPick,
                     <span className={cn(isDark ? "text-slate-400" : "text-slate-600")}>{new Date(entry.isoDate).toLocaleString()}</span>
                     {isActive && <span className={cn("ml-auto text-[10px]", isDark ? "text-amber-300" : "text-amber-700")}>● viewing</span>}
                     {!isActive && inOther && otherSlotLabel && (
-                        <span className={cn("ml-auto text-[10px] font-mono", isDark ? "text-amber-300" : "text-amber-700")}>in {otherSlotLabel}</span>
+                        <span className={cn("ml-auto text-[10px]", isDark ? "text-amber-300" : "text-amber-700")}>in {otherSlotLabel}</span>
                     )}
                 </div>
                 <div className={cn("mt-0.5 truncate", isDark ? "text-slate-300" : "text-slate-700")} title={entry.subject}>
