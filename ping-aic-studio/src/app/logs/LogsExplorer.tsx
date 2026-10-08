@@ -3895,7 +3895,7 @@ export function LogsExplorer({
           {/* Row 1: mode toggle + tail/search controls + keyword highlights */}
           <div className="flex items-center gap-2 px-4 py-2">
             {/* Mode toggle */}
-            <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+            <div className="seg-sm">
               {(["tail", "search", "transaction"] as LogMode[]).map((m) => (
                 <button
                   key={m}
@@ -3906,10 +3906,8 @@ export function LogsExplorer({
                   }}
                   disabled={loading || searching}
                   className={cn(
-                    "px-2 py-0.5 text-[11px] font-medium transition-colors",
-                    mode === m
-                      ? "bg-slate-900 text-white"
-                      : "bg-white text-slate-500 hover:bg-slate-50"
+                    "seg-sm-item",
+                    mode === m && "seg-sm-item-active"
                   )}
                 >
                   {m === "tail" ? "Tail" : m === "search" ? "Search" : "Transaction"}
@@ -4056,14 +4054,14 @@ export function LogsExplorer({
                   {/* Per-field Aa/[W] for Search keywords. Note: AIC's _queryFilter is
                       always case-insensitive substring; these toggles control how the
                       same terms are auto-highlighted in the rendered results. */}
-                  <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+                  <div className="seg-sm">
                     <button
                       type="button"
                       title="Case sensitive (auto-highlight only — AIC server is always case-insensitive)"
                       onClick={() => setSearchMatchCase((v) => !v)}
                       className={cn(
-                        "px-2 py-0.5 text-[11px] font-medium font-mono transition-colors",
-                        searchMatchCase ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                        "seg-sm-item font-mono",
+                        searchMatchCase && "seg-sm-item-active"
                       )}
                     >Aa</button>
                     <button
@@ -4071,12 +4069,12 @@ export function LogsExplorer({
                       title="Whole word (auto-highlight only — AIC server has no whole-word operator)"
                       onClick={() => setSearchWholeWord((v) => !v)}
                       className={cn(
-                        "px-2 py-0.5 text-[11px] font-medium font-mono border-l border-slate-300 transition-colors",
-                        searchWholeWord ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                        "seg-sm-item font-mono",
+                        searchWholeWord && "seg-sm-item-active"
                       )}
                     >[W]</button>
                   </div>
-                  <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+                  <div className="seg-sm">
                     {(["remote", "local"] as const).map((ds) => (
                       <button
                         key={ds}
@@ -4087,10 +4085,8 @@ export function LogsExplorer({
                           ? "Search the local archive (offline; text matches indexed fields only — pull data first via Data → Pull → Logs)"
                           : "Search live AIC"}
                         className={cn(
-                          "px-2 py-0.5 text-[11px] font-medium transition-colors",
-                          (config.dataSource ?? "remote") === ds
-                            ? "bg-slate-900 text-white"
-                            : "bg-white text-slate-500 hover:bg-slate-50",
+                          "seg-sm-item",
+                          (config.dataSource ?? "remote") === ds && "seg-sm-item-active",
                         )}
                       >
                         {ds === "remote" ? "Remote" : "Local"}
@@ -4188,14 +4184,14 @@ export function LogsExplorer({
               </button>
             )}
             {/* Per-field Aa/[W] for the Filter predicate */}
-            <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+            <div className="seg-sm">
               <button
                 type="button"
                 title="Case sensitive (Filter predicate)"
                 onClick={() => setFilterMatchCase((v) => !v)}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium font-mono transition-colors",
-                  filterMatchCase ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item font-mono",
+                  filterMatchCase && "seg-sm-item-active"
                 )}
               >Aa</button>
               <button
@@ -4203,8 +4199,8 @@ export function LogsExplorer({
                 title="Whole word (Filter predicate)"
                 onClick={() => setFilterWholeWord((v) => !v)}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium font-mono border-l border-slate-300 transition-colors",
-                  filterWholeWord ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item font-mono",
+                  filterWholeWord && "seg-sm-item-active"
                 )}
               >[W]</button>
             </div>
@@ -4249,14 +4245,14 @@ export function LogsExplorer({
                 Clear
               </button>
             )}
-            <div className="flex rounded border border-slate-300 overflow-hidden shrink-0" title="Highlight predicate; also drives auto-highlight rendering for Filter and Search terms">
+            <div className="seg-sm" title="Highlight predicate; also drives auto-highlight rendering for Filter and Search terms">
               <button
                 type="button"
                 title="Case sensitive (Highlight predicate; also controls how all auto-highlighted terms are rendered)"
                 onClick={() => setHighlightMatchCase((v) => !v)}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium font-mono transition-colors",
-                  highlightMatchCase ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item font-mono",
+                  highlightMatchCase && "seg-sm-item-active"
                 )}
               >Aa</button>
               <button
@@ -4264,8 +4260,8 @@ export function LogsExplorer({
                 title="Whole word (Highlight predicate; also controls how all auto-highlighted terms are rendered)"
                 onClick={() => setHighlightWholeWord((v) => !v)}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium font-mono border-l border-slate-300 transition-colors",
-                  highlightWholeWord ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item font-mono",
+                  highlightWholeWord && "seg-sm-item-active"
                 )}
               >[W]</button>
             </div>
@@ -4286,18 +4282,18 @@ export function LogsExplorer({
                   />
                   <span>/ {matchIndices.length}</span>
                 </div>
-                <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+                <div className="seg-sm">
                   <button
                     type="button"
                     title="Previous match (Shift+Enter)"
                     onClick={goPrevMatch}
-                    className="px-2 py-0.5 text-[11px] font-medium bg-white text-slate-500 hover:bg-slate-50 transition-colors"
+                    className="seg-sm-item"
                   >↑ Prev</button>
                   <button
                     type="button"
                     title="Next match (Enter)"
                     onClick={goNextMatch}
-                    className="px-2 py-0.5 text-[11px] font-medium bg-white text-slate-500 hover:bg-slate-50 border-l border-slate-300 hover:bg-slate-50 transition-colors"
+                    className="seg-sm-item"
                   >↓ Next</button>
                 </div>
               </>
@@ -4307,13 +4303,13 @@ export function LogsExplorer({
           {/* Row 3: view toggles + count + height controls + fullscreen */}
           <div className="flex items-center gap-3 px-4 py-2 border-t border-slate-100">
             {/* Terminal / Table / JSON toggle — available in all modes */}
-            <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+            <div className="seg-sm">
               <button
                 type="button"
                 onClick={() => setViewMode("terminal")}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium transition-colors",
-                  viewMode === "terminal" ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item",
+                  viewMode === "terminal" && "seg-sm-item-active"
                 )}
               >
                 Terminal
@@ -4330,8 +4326,8 @@ export function LogsExplorer({
                   }
                 }}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium border-l border-slate-300 transition-colors",
-                  viewMode === "table" ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item",
+                  viewMode === "table" && "seg-sm-item-active"
                 )}
               >
                 Table
@@ -4340,8 +4336,8 @@ export function LogsExplorer({
                 type="button"
                 onClick={() => setViewMode("json")}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium border-l border-slate-300 transition-colors",
-                  viewMode === "json" ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item",
+                  viewMode === "json" && "seg-sm-item-active"
                 )}
                 title="Show all entries as one JSON document"
               >
@@ -4434,7 +4430,7 @@ export function LogsExplorer({
             {/* Bulk expand / collapse — meaningful when rows are line-clamped
                 (terminal + wrap) or when expanding payloads in the table view. */}
             {((viewMode === "terminal" && wrapLines) || viewMode === "table") && filtered.length > 0 && (
-              <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+              <div className="seg-sm">
                 <button
                   type="button"
                   title="Expand all entries"
@@ -4447,7 +4443,7 @@ export function LogsExplorer({
                       setExpandCmd({ kind: "all", nonce: Date.now() });
                     }
                   }}
-                  className="px-2 py-0.5 text-[11px] font-medium bg-white text-slate-500 hover:bg-slate-50 transition-colors"
+                  className="seg-sm-item"
                 >
                   Expand all
                 </button>
@@ -4461,7 +4457,7 @@ export function LogsExplorer({
                       setExpandCmd({ kind: "none", nonce: Date.now() });
                     }
                   }}
-                  className="px-2 py-0.5 text-[11px] font-medium bg-white text-slate-500 hover:bg-slate-50 border-l border-slate-300 transition-colors"
+                  className="seg-sm-item"
                 >
                   Collapse all
                 </button>
