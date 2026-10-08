@@ -34,22 +34,24 @@
 }
 
 :root[data-theme="dark"] {
-  --bg: #0c0d10;
-  --tile: #141519;
-  --tile-2: #1a1b20;
-  --inset: #0f1013;
+  /* Graphite rather than near-black, and off-white text: body text ~12:1
+     instead of ~16:1, which read as harsh with bold headings. */
+  --bg: #16181d;
+  --tile: #1d1f25;
+  --tile-2: #24262d;
+  --inset: #191b20;
   --line: rgba(255, 255, 255, 0.08);
-  --line-2: rgba(255, 255, 255, 0.18);
-  --line-3: rgba(255, 255, 255, 0.3);
-  --ink: #f1f2f4;
-  --ink-2: #a3a6ad;
-  --ink-3: #8d9098;
+  --line-2: rgba(255, 255, 255, 0.16);
+  --line-3: rgba(255, 255, 255, 0.28);
+  --ink: #dcdee3;
+  --ink-2: #a9acb3;
+  --ink-3: #9296a0;
   --accent: #6b97ff;
   --accent-weak: rgba(107, 151, 255, 0.14);
-  --on-accent: #0c0d10;
+  --on-accent: #16181d;
   --hover: rgba(255, 255, 255, 0.04);
-  --overlay: rgba(0, 0, 0, 0.6);
-  --popover-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
+  --overlay: rgba(0, 0, 0, 0.55);
+  --popover-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.55);
   color-scheme: dark;
 }
 

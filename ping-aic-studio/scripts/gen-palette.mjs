@@ -25,7 +25,7 @@ const WHITE = "#ffffff";
 const BLACK = "#000000";
 const PAPER = "#f8f4ed"; // light-theme tile ("white")
 const PAPER_MIX = "#fbf8f2"; // what light-theme accent tints are mixed toward
-const TILE_DARK = "#141519";
+const TILE_DARK = "#1d1f25"; // dark-theme tile: graphite, not near-black
 
 // family -> [light 500, light 600, light 700, dark accent]
 const ACCENTS = {
@@ -49,9 +49,9 @@ const FAMILY_OF = {
 const NEUTRALS = ["slate", "gray", "zinc", "neutral", "stone"];
 // Warm paper greys for the light theme (hue taken from the canvas, so borders and muted text don't look dirty).
 const NEUTRAL_LIGHT = ["#f2ede4", "#ebe5d9", "#ddd5c6", "#c9bfad", "#776d5f", "#6b6254", "#51493d", "#3c352c", "#2a251f", "#211d17", "#16130f"];
-const NEUTRAL_DARK = ["#0c0d10", "#1a1b20", "#26282e", "#34363d", "#7c808a", "#8d9098", "#a3a6ad", "#c4c7cd", "#dcdee2", "#f1f2f4", "#fafafb"];
+const NEUTRAL_DARK = ["#16181d", "#24262d", "#2f3239", "#3d4048", "#858993", "#9296a0", "#a9acb3", "#c0c3c9", "#d0d2d7", "#dcdee3", "#e6e7ea"];
 // Cool greys used inside code panes in the dark theme.
-const NEUTRAL_CODE_DARK = ["#f5f6f8", "#eceef2", "#dfe2e8", "#c9cdd5", "#80858f", "#646973", "#5f646e", "#383c44", "#24272d", "#14161b", "#0c0d10"];
+const NEUTRAL_CODE_DARK = ["#eef0f3", "#e3e5e9", "#d6d9df", "#c3c6cd", "#868a94", "#787d87", "#6c717b", "#3d4048", "#2a2d34", "#1d1f25", "#191b20"];
 // Code panes in the light theme, indexed by the shade the component asked for (authored for a dark pane).
 const NEUTRAL_CODE_LIGHT = ["#120f0b", "#1d1914", "#29241e", "#3a342c", "#5c5447", "#756c5e", "#8f8574", "#d8cfbf", "#e7e0d3", "#f2ede4", "#f6f2ea"];
 // For accents in light code panes: which light-theme shade stands in for each authored shade.
@@ -81,7 +81,7 @@ function codeLightRamp(anchors) {
 const VARIANTS = {
   light: { white: PAPER, neutral: NEUTRAL_LIGHT, accent: (fam) => lightRamp(ACCENTS[fam]) },
   dark: { white: TILE_DARK, neutral: NEUTRAL_DARK, accent: (fam) => darkRamp(ACCENTS[fam][3]) },
-  codeDark: { white: WHITE, neutral: NEUTRAL_CODE_DARK, accent: (fam) => lightRamp(ACCENTS[fam], WHITE) },
+  codeDark: { white: "#e6e7ea", neutral: NEUTRAL_CODE_DARK, accent: (fam) => lightRamp(ACCENTS[fam], WHITE) },
   codeLight: { white: NEUTRAL_CODE_LIGHT[1], neutral: NEUTRAL_CODE_LIGHT, accent: (fam) => codeLightRamp(ACCENTS[fam]) },
 };
 
