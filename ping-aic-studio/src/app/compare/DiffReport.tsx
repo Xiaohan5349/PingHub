@@ -1702,7 +1702,7 @@ function JourneyTreeSection({ tree, forceOpen: parentForceOpen, forceSeq: parent
         onClick={() => setOpen((o) => !o)}
       >
         <span className="text-sm font-semibold text-slate-700 flex-1">Journeys</span>
-        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
           {totalChanged} changed
         </span>
         <span className="text-[10px] text-slate-400">{tree.length} entry journeys</span>
@@ -1744,7 +1744,7 @@ function JourneyTreeSection({ tree, forceOpen: parentForceOpen, forceSeq: parent
               value={searchQ}
               onChange={(e) => { setSearchQ(e.target.value); setPage(0); }}
               placeholder="Search journeys…"
-              className="flex-1 text-xs rounded border border-slate-200 px-2.5 py-1 font-mono focus:outline-none focus:ring-1 focus:ring-sky-400"
+              className="flex-1 text-xs rounded border border-slate-200 px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-sky-400"
             />
             {searchQ && (
               <button type="button" onClick={() => setSearchQ("")} className="text-xs text-slate-400 hover:text-slate-600">
@@ -2253,7 +2253,7 @@ function WorkflowGroupRow({
         </svg>
         <span className="text-xs font-medium text-slate-700 flex-1 truncate">{workflowName}</span>
         {/* Diff badges */}
-        <div className="flex items-center gap-1 text-[9px] font-mono shrink-0">
+        <div className="flex items-center gap-1 text-[9px] shrink-0">
           {modified > 0 && <span className="px-1 py-0.5 rounded bg-amber-100 text-amber-700">{modified} modified</span>}
           {added > 0 && <span className="px-1 py-0.5 rounded bg-emerald-100 text-emerald-700">{added} added</span>}
           {removed > 0 && <span className="px-1 py-0.5 rounded bg-red-100 text-red-700">{removed} removed</span>}
@@ -2320,7 +2320,7 @@ function AllFilesModalScopeSection({
         onClick={() => setOpen((o) => !o)}
       >
         <span className="text-sm font-semibold text-slate-700 flex-1">{group.label}</span>
-        <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
+        <div className="flex items-center gap-2 text-[10px] shrink-0">
           <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{group.itemCount} total</span>
           {group.itemModified > 0 && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">{group.itemModified} modified</span>}
           {group.itemAdded > 0 && <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">{group.itemAdded} added</span>}
@@ -2934,7 +2934,7 @@ function ScopeSection({
       >
         <span className={cn("text-sm font-semibold flex-1", hasChanges ? "text-slate-700" : "text-slate-400")}>{group.label}</span>
 
-        <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
+        <div className="flex items-center gap-2 text-[10px] shrink-0">
           {group.itemModified > 0 && (
             <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">{group.itemModified} modified</span>
           )}
@@ -3018,7 +3018,7 @@ function ScopeSection({
                                 className="accent-indigo-600 w-3 h-3"
                               />
                               <span className="flex-1 text-slate-700 truncate">{t.label}</span>
-                              <span className="text-[10px] text-slate-400 font-mono shrink-0">{t.count}</span>
+                              <span className="text-[10px] text-slate-400 shrink-0">{t.count}</span>
                             </label>
                           );
                         })}
@@ -3355,9 +3355,9 @@ export function DiffReport({ report, tasks = [], mode = "compare", dryRunMode, s
         <div className="px-5 py-4 border-b border-slate-100 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-800">
-              <span className="font-mono">{sourceLabel}</span>
+              <span className="">{sourceLabel}</span>
               <span className="mx-1.5 text-slate-400">→</span>
-              <span className="font-mono">{targetLabel}</span>
+              <span className="">{targetLabel}</span>
             </h2>
             <span className="text-xs text-slate-400">{new Date(report.generatedAt).toLocaleString()}</span>
           </div>
