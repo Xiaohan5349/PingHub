@@ -133,19 +133,19 @@ function ReleaseStrip({ release }: { release: ReleaseCacheEntry | null }) {
     urgency === "overdue" ? (
       <span className="text-rose-600 font-medium" title={nextUpgrade ?? undefined}>
         overdue{days !== null ? ` by ${Math.abs(days)}d` : ""}
-        {plannedDate && <span className="ml-1 font-normal opacity-75">(planned {plannedDate})</span>}
+        {plannedDate && <span className="ml-1 font-normal text-ink-3">(planned {plannedDate})</span>}
       </span>
     )
       : urgency === "soon" ? (
         <span className="text-amber-700 font-medium" title={nextUpgrade ?? undefined}>
           upgrade in {days}d
-          {plannedDate && <span className="ml-1 font-normal opacity-75">({plannedDate})</span>}
+          {plannedDate && <span className="ml-1 font-normal text-ink-3">({plannedDate})</span>}
         </span>
       )
         : urgency === "later" ? (
           <span className="text-ink-2" title={nextUpgrade ?? undefined}>
             upgrade in {days}d
-            {plannedDate && <span className="ml-1 opacity-75">({plannedDate})</span>}
+            {plannedDate && <span className="ml-1 text-ink-3">({plannedDate})</span>}
           </span>
         )
           : <span className="text-ink-3">no upgrade scheduled</span>;
@@ -154,7 +154,7 @@ function ReleaseStrip({ release }: { release: ReleaseCacheEntry | null }) {
       <div className="flex items-center gap-1.5 min-w-0">
         <span className="font-mono text-ink truncate" title={currentVersion}>v{currentVersion}</span>
         <span className={cn(
-          "inline-block px-2 rounded-md font-mono text-[11.5px] ring-1 ring-inset",
+          "inline-block px-2 rounded-md text-[11.5px] font-medium ring-1 ring-inset",
           channel === "rapid"
             ? "text-indigo-600 ring-indigo-400"
             : "text-ink-2 ring-line-2",

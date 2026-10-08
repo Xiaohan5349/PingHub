@@ -842,19 +842,19 @@ function ReleaseStrip({
     urgency === "overdue" ? (
       <span className="text-rose-600 font-medium" title={nextUpgrade ?? undefined}>
         overdue{days !== null ? ` by ${Math.abs(days)}d` : ""}
-        {plannedDate && <span className="ml-1 font-normal opacity-75">(planned {plannedDate})</span>}
+        {plannedDate && <span className="ml-1 font-normal text-ink-3">(planned {plannedDate})</span>}
       </span>
     )
       : urgency === "soon" ? (
         <span className="text-amber-700 font-medium" title={nextUpgrade ?? undefined}>
           upgrade in {days}d
-          {plannedDate && <span className="ml-1 font-normal opacity-75">({plannedDate})</span>}
+          {plannedDate && <span className="ml-1 font-normal text-ink-3">({plannedDate})</span>}
         </span>
       )
         : urgency === "later" ? (
           <span className="text-slate-500" title={nextUpgrade ?? undefined}>
             upgrade in {days}d
-            {plannedDate && <span className="ml-1 opacity-75">({plannedDate})</span>}
+            {plannedDate && <span className="ml-1 text-ink-3">({plannedDate})</span>}
           </span>
         )
           : <span className="text-slate-400">no upgrade scheduled</span>;

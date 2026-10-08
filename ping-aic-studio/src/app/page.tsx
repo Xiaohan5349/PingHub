@@ -126,7 +126,7 @@ function PipelineTile({
   return (
     <section className={`card p-5 ${className ?? ""}`}>
       <div className="flex items-center justify-between gap-3">
-        <h2 className="tile-caption">environments / pipeline order</h2>
+        <h2 className="tile-caption">Environments in pipeline order</h2>
         <Link href="/environments" className="text-sm text-accent hover:underline">Manage →</Link>
       </div>
       <ol className="mt-4 flex flex-col md:flex-row md:items-center gap-2 md:gap-0">
@@ -142,7 +142,7 @@ function PipelineTile({
               </div>
               <div className="mt-1.5 flex items-center justify-between gap-2 text-[12.5px]">
                 <span className={HEALTH_WORD[health].tone}>{HEALTH_WORD[health].label}</span>
-                {typeof latencyMs === "number" && <span className="font-mono text-ink-2">{latencyMs} ms</span>}
+                {typeof latencyMs === "number" && <span className="text-ink-2">{latencyMs} ms</span>}
               </div>
             </div>
           </li>
@@ -170,7 +170,7 @@ function UpcomingUpgradesTile({ items, className }: { items: UpgradeItem[]; clas
   return (
     <section className={`card p-5 flex flex-col ${className ?? ""}`}>
       <div className="flex items-center justify-between gap-2">
-        <h2 className="tile-caption">upcoming aic upgrade{items.length > 1 ? "s" : ""}</h2>
+        <h2 className="tile-caption">Upcoming AIC upgrade{items.length > 1 ? "s" : ""}</h2>
         <span className={overdue ? "pill-danger" : "pill-warning"}>{overdue ? "overdue" : "soon"}</span>
       </div>
       <div className={`mt-5 flex items-baseline gap-2 ${tone}`}>
