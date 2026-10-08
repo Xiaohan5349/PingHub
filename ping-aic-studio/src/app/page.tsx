@@ -60,7 +60,7 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-5">
       <header>
         <h1 className="page-title">Dashboard</h1>
         <p className="section-subtitle mt-1">
@@ -68,35 +68,87 @@ export default function DashboardPage() {
         </p>
       </header>
 
-      {upcomingUpgrades.length > 0 && <UpcomingUpgradesBanner items={upcomingUpgrades} />}
-
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="section-title">Environments</h2>
-          <Link href="/environments" className="text-sm text-indigo-600 hover:text-indigo-700">Manage →</Link>
+      {envCards.length === 0 ? (
+        <div className="card-padded text-center text-sm text-ink-2">
+          No environments configured.{" "}
+          <Link href="/environments" className="text-accent hover:underline">Add one</Link>
         </div>
-        {envCards.length === 0 ? (
-          <div className="card-padded text-center text-sm text-slate-400">
-            No environments configured.{" "}
-            <Link href="/environments" className="text-indigo-600 hover:underline">Add one</Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {envCards.map(({ env, health, healthInfo, lastPull, lastPush, release }) => (
-              <EnvCard
-                key={env.name}
-                env={env}
-                health={health}
-                healthInfo={healthInfo}
-                lastPull={lastPull ?? null}
-                lastPush={lastPush ?? null}
-                release={release as ReleaseCacheEntry | null}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-4 xl:grid-cols-6 gap-3 grid-flow-row-dense">
+          <PipelineTile
+            stages={envCards.map(({ env, health, healthInfo }) => ({ env, health, latencyMs: healthInfo?.latencyMs }))}
+            className={upcomingUpgrades.length > 0 ? "md:col-span-4" : "md:col-span-4 xl:col-span-6"}
+          />
+          {upcomingUpgrades.length > 0 && (
+            <UpcomingUpgradesTile items={upcomingUpgrades} className="md:col-span-4 xl:col-span-2 xl:row-span-2" />
+          )}
+          {envCards.map(({ env, health, healthInfo, lastPull, lastPush, release }) => (
+            <EnvCard
+              key={env.name}
+              env={env}
+              health={health}
+              healthInfo={healthInfo}
+              lastPull={lastPull ?? null}
+              lastPush={lastPush ?? null}
+              release={release as ReleaseCacheEntry | null}
+              className="md:col-span-2"
+            />
+          ))}
+        </div>
+      )}
     </div>
+  );
+}
+
+const HEALTH_WORD: Record<EnvHealth, { label: string; tone: string }> = {
+  healthy: { label: "healthy", tone: "text-emerald-600" },
+  stale: { label: "checking…", tone: "text-amber-600" },
+  locked: { label: "locked", tone: "text-rose-600" },
+  error: { label: "unhealthy", tone: "text-rose-600" },
+};
+
+const STAGE_DOT: Record<string, string> = {
+  blue: "bg-blue-500",
+  green: "bg-emerald-500",
+  yellow: "bg-amber-500",
+  red: "bg-rose-500",
+  slate: "bg-slate-400",
+};
+
+/** Environments in configured (pipeline) order with their tenant health. */
+function PipelineTile({
+  stages,
+  className,
+}: {
+  stages: { env: { name: string; label: string; color: string }; health: EnvHealth; latencyMs?: number }[];
+  className?: string;
+}) {
+  return (
+    <section className={`card p-5 ${className ?? ""}`}>
+      <div className="flex items-center justify-between gap-3">
+        <h2 className="tile-caption">environments / pipeline order</h2>
+        <Link href="/environments" className="text-sm text-accent hover:underline">Manage →</Link>
+      </div>
+      <ol className="mt-4 flex flex-col md:flex-row md:items-center gap-2 md:gap-0">
+        {stages.map(({ env, health, latencyMs }, i) => (
+          <li key={env.name} className="contents">
+            {i > 0 && (
+              <span aria-hidden className="hidden md:block shrink-0 w-10 mx-1.5 h-px bg-line-3 relative after:absolute after:-right-px after:-top-[4px] after:border-[4.5px] after:border-transparent after:border-l-[7px] after:border-l-line-3" />
+            )}
+            <div className="flex-1 min-w-0 rounded-xl bg-tile-2 ring-1 ring-inset ring-line px-4 py-3">
+              <div className="flex items-center gap-2 font-semibold text-[15px] text-ink truncate">
+                <span className={`w-2 h-2 rounded-full shrink-0 ${STAGE_DOT[env.color] ?? STAGE_DOT.slate}`} />
+                {env.label}
+              </div>
+              <div className="mt-1.5 flex items-center justify-between gap-2 text-[12.5px]">
+                <span className={HEALTH_WORD[health].tone}>{HEALTH_WORD[health].label}</span>
+                {typeof latencyMs === "number" && <span className="font-mono text-ink-2">{latencyMs} ms</span>}
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }
 
@@ -107,41 +159,69 @@ interface UpgradeItem {
   days: number | null;
 }
 
-function UpcomingUpgradesBanner({ items }: { items: UpgradeItem[] }) {
-  const hasOverdue = items.some((x) => x.urgency === "overdue");
-  const tone = hasOverdue
-    ? "bg-rose-50 border-rose-200 text-rose-800"
-    : "bg-amber-50 border-amber-200 text-amber-800";
+/** Most urgent upgrade as the page's one big number; any others listed below it. */
+function UpcomingUpgradesTile({ items, className }: { items: UpgradeItem[]; className?: string }) {
+  const sorted = [...items].sort((a, b) =>
+    a.urgency !== b.urgency ? (a.urgency === "overdue" ? -1 : 1) : (a.days ?? 0) - (b.days ?? 0),
+  );
+  const [first, ...rest] = sorted;
+  const overdue = first.urgency === "overdue";
+  const tone = overdue ? "text-rose-600" : "text-amber-600";
   return (
-    <div className={`border rounded-lg px-4 py-3 text-sm ${tone}`}>
-      <div className="font-semibold mb-1">Upcoming AIC upgrades</div>
-      <ul className="space-y-0.5">
-        {items.map((x) => (
-          <li key={x.env.name} className="flex items-baseline gap-2">
-            <span className="font-medium">{x.env.label}</span>
-            <span className="text-xs opacity-75">({x.env.name})</span>
-            <span className="text-xs">·</span>
-            <span className="text-xs">
-              {x.urgency === "overdue"
-                ? x.days !== null
-                  ? `overdue by ${Math.abs(x.days)}d`
-                  : "overdue"
-                : x.days !== null
-                  ? `in ${x.days}d`
-                  : "soon"}
-            </span>
-            {x.release?.info?.nextUpgrade && (
-              <span className="text-xs opacity-75" title={x.release.info.nextUpgrade}>
-                (planned {formatPlannedDate(x.release.info.nextUpgrade)})
+    <section className={`card p-5 flex flex-col ${className ?? ""}`}>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="tile-caption">upcoming aic upgrade{items.length > 1 ? "s" : ""}</h2>
+        <span className={overdue ? "pill-danger" : "pill-warning"}>{overdue ? "overdue" : "soon"}</span>
+      </div>
+      <div className={`mt-5 flex items-baseline gap-2 ${tone}`}>
+        <span className="text-[72px] font-semibold tracking-tight leading-none">
+          {first.days !== null ? Math.abs(first.days) : "—"}
+        </span>
+        <span className="text-lg font-semibold text-ink-2">
+          {first.days === null ? (overdue ? "overdue" : "soon") : `day${Math.abs(first.days) === 1 ? "" : "s"}${overdue ? " overdue" : ""}`}
+        </span>
+      </div>
+      <UpgradeFacts item={first} />
+      {rest.length > 0 && (
+        <ul className="mt-4 pt-3 border-t border-line space-y-2">
+          {rest.map((x) => (
+            <li key={x.env.name} className="flex items-baseline justify-between gap-2 text-[13px]">
+              <span className="text-ink font-medium truncate">
+                {x.env.label} <span className="font-mono text-xs text-ink-3">{x.env.name}</span>
               </span>
-            )}
-            {x.release?.info?.currentVersion && (
-              <span className="text-xs font-mono opacity-75">v{x.release.info.currentVersion} → ?</span>
-            )}
-          </li>
-        ))}
-      </ul>
-    </div>
+              <span className={x.urgency === "overdue" ? "text-rose-600" : "text-amber-600"}>
+                {x.urgency === "overdue"
+                  ? x.days !== null ? `overdue by ${Math.abs(x.days)}d` : "overdue"
+                  : x.days !== null ? `in ${x.days}d` : "soon"}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function UpgradeFacts({ item }: { item: UpgradeItem }) {
+  const planned = item.release?.info?.nextUpgrade;
+  const current = item.release?.info?.currentVersion;
+  return (
+    <dl className="mt-5 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-[13px]">
+      <dt className="text-ink-3">Environment</dt>
+      <dd className="text-ink font-medium">{item.env.label} <span className="font-mono text-ink-3">{item.env.name}</span></dd>
+      {planned && (
+        <>
+          <dt className="text-ink-3">Planned</dt>
+          <dd className="text-ink font-medium" title={planned}>{formatPlannedDate(planned)}</dd>
+        </>
+      )}
+      {current && (
+        <>
+          <dt className="text-ink-3">Version</dt>
+          <dd className="font-mono text-ink">v{current} → ?</dd>
+        </>
+      )}
+    </dl>
   );
 }
 
