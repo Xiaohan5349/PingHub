@@ -4351,10 +4351,8 @@ export function LogsExplorer({
                 onClick={() => setWrapLines((w) => !w)}
                 title={wrapLines ? "Disable line wrap" : "Wrap long lines"}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium rounded border transition-colors shrink-0",
-                  wrapLines
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-white text-slate-500 border-slate-300 hover:bg-slate-50"
+                  "toggle-chip",
+                  wrapLines && "toggle-chip-on"
                 )}
               >
                 Wrap
@@ -4367,10 +4365,8 @@ export function LogsExplorer({
                 onClick={() => setAutoScroll((v) => !v)}
                 title={autoScroll ? "Pause auto-scroll (stay at current position)" : "Resume auto-scroll to latest entries"}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium rounded border transition-colors shrink-0",
-                  autoScroll
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-white text-slate-500 border-slate-300 hover:bg-slate-50"
+                  "toggle-chip",
+                  autoScroll && "toggle-chip-on"
                 )}
               >
                 Auto-scroll
@@ -4381,10 +4377,8 @@ export function LogsExplorer({
               onClick={() => setDedupe((v) => !v)}
               title={dedupe ? "Show all entries" : "Collapse exact-match duplicates"}
               className={cn(
-                "px-2 py-0.5 text-[11px] font-medium rounded border transition-colors shrink-0",
-                dedupe
-                  ? "bg-slate-900 text-white border-slate-900"
-                  : "bg-white text-slate-500 border-slate-300 hover:bg-slate-50"
+                "toggle-chip",
+                dedupe && "toggle-chip-on"
               )}
             >
               Dedupe
@@ -4403,7 +4397,7 @@ export function LogsExplorer({
                   ? "Select a log entry first to enable this"
                   : "Scroll the highlighted entry back into view"
               }
-              className="ml-auto px-2 py-0.5 text-[11px] font-medium rounded border border-slate-300 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+              className="ml-auto toggle-chip transition-colors shrink-0"
             >
               Scroll to selected
             </button>
@@ -4422,7 +4416,7 @@ export function LogsExplorer({
                     ? "Select a log entry first to enable this"
                     : "Open ±5 seconds of context around the selected entry in a new tab"
                 }
-                className="px-2 py-0.5 text-[11px] font-medium rounded border border-slate-300 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="toggle-chip transition-colors shrink-0"
               >
                 Context ±5s
               </button>
