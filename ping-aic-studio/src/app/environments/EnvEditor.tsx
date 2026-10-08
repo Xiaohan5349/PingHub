@@ -379,7 +379,7 @@ function TestLogApiButton({
         <div className="rounded-md overflow-hidden border border-slate-700">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 code-surface border-b border-slate-700">
             <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", statusDot)} />
-            <span className={cn("text-xs font-mono", statusColor)}>
+            <span className={cn("text-xs", statusColor)}>
               {running
                 ? "Connecting to Log API..."
                 : exitCode === 0 ? "Log API credentials valid"
@@ -785,7 +785,7 @@ function FrConfigControls({
         <div className="rounded-md overflow-hidden border border-slate-700">
           <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 code-surface border-b border-slate-700">
             <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", headerDot)} />
-            <span className={cn("text-xs font-mono", headerColor)}>{terminal.headerLabel}</span>
+            <span className={cn("text-xs", headerColor)}>{terminal.headerLabel}</span>
           </div>
           <div className="bg-slate-900 code-surface p-3 font-mono text-xs max-h-48 overflow-y-auto">
             {terminal.lines.map((line, i) => (
