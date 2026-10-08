@@ -1,30 +1,78 @@
 @import "tailwindcss";
+@import "./palette.css";
 
+/* ── Theme tokens (Bento Grid Dark + derived light) ─────────────────────────
+   data-theme on <html> is set before first paint by the script in layout.tsx
+   (stored preference, else the OS setting). New UI uses these semantic tokens
+   via the Tailwind colours declared in @theme below; existing class names are
+   recoloured through palette.css. */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --border: #e2e8f0;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --primary: #0ea5e9;
-  --primary-foreground: #ffffff;
-  --destructive: #ef4444;
-  --success: #22c55e;
-  --warning: #f59e0b;
+  --bg: #eceef2;
+  --tile: #ffffff;
+  --tile-2: #f5f6f8;
+  --inset: #f0f2f5;
+  --line: rgba(20, 26, 38, 0.1);
+  --line-2: rgba(20, 26, 38, 0.2);
+  --line-3: rgba(20, 26, 38, 0.36);
+  --ink: #14161b;
+  --ink-2: #4d525b;
+  --ink-3: #646973;
+  --accent: #2c5bd0;
+  --accent-weak: rgba(44, 91, 208, 0.1);
+  --on-accent: #ffffff;
+  --hover: rgba(20, 26, 38, 0.035);
+  --overlay: rgba(20, 22, 27, 0.45);
+  --popover-shadow: 0 24px 60px -20px rgba(20, 22, 27, 0.35);
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  --bg: #0c0d10;
+  --tile: #141519;
+  --tile-2: #1a1b20;
+  --inset: #0f1013;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-2: rgba(255, 255, 255, 0.18);
+  --line-3: rgba(255, 255, 255, 0.3);
+  --ink: #f1f2f4;
+  --ink-2: #a3a6ad;
+  --ink-3: #8d9098;
+  --accent: #6b97ff;
+  --accent-weak: rgba(107, 151, 255, 0.14);
+  --on-accent: #0c0d10;
+  --hover: rgba(255, 255, 255, 0.04);
+  --overlay: rgba(0, 0, 0, 0.6);
+  --popover-shadow: 0 24px 60px -20px rgba(0, 0, 0, 0.6);
+  color-scheme: dark;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-background: var(--bg);
+  --color-foreground: var(--ink);
+  --color-canvas: var(--bg);
+  --color-tile: var(--tile);
+  --color-tile-2: var(--tile-2);
+  --color-inset: var(--inset);
+  --color-line: var(--line);
+  --color-line-2: var(--line-2);
+  --color-line-3: var(--line-3);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-accent: var(--accent);
+  --color-accent-weak: var(--accent-weak);
+  --color-on-accent: var(--on-accent);
+  --color-hover: var(--hover);
+  --color-overlay: var(--overlay);
+  --font-sans: "Segoe UI Variable Text", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  --font-mono: "Cascadia Mono", Consolas, "SF Mono", Menlo, ui-monospace, monospace;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ── Console animations ──────────────────────────────────────────────────── */
@@ -78,7 +126,7 @@ body {
 
 .code-mono {
   font-family:
-    "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
+    "Cascadia Mono", "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular,
     "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-feature-settings: "calt" 0, "liga" 0;
   /* predictable code rendering */
@@ -135,68 +183,72 @@ body {
   display: none;
 }
 
-/* ── Calm SaaS design tokens ───────────────────────────────── */
+/* ── Shared component classes (Bento materials) ───────────────────────────
+   Radii: tile 18 · inner block 12 · control 8 · chip 6. Tiles separate by a
+   1px hairline and one step of lightness, never by drop shadows. */
 @layer components {
   .card {
-    @apply bg-white border border-slate-200/60 rounded-xl;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    @apply bg-tile border border-line rounded-[18px];
   }
 
   .card-padded {
-    @apply bg-white border border-slate-200/60 rounded-xl p-4;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    @apply bg-tile border border-line rounded-[18px] p-4;
   }
 
   .section-title {
-    @apply text-base font-semibold text-slate-900;
+    @apply text-base font-semibold text-ink;
   }
 
   .section-subtitle {
-    @apply text-sm text-slate-500;
+    @apply text-sm text-ink-2;
   }
 
   .page-title {
-    @apply text-2xl font-bold text-slate-900 tracking-tight;
+    @apply text-[26px] font-semibold text-ink tracking-tight leading-tight;
   }
 
   .label-xs {
-    @apply text-[11px] font-semibold text-slate-500;
+    @apply text-[11px] font-semibold text-ink-3;
   }
 
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
-    box-shadow: 0 1px 2px rgba(79, 70, 229, 0.25);
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-accent text-on-accent text-sm font-semibold hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-slate-200 text-slate-900 text-sm font-medium hover:bg-slate-50 transition-colors;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-transparent border border-line-2 text-ink text-sm font-medium hover:bg-hover transition-colors;
   }
 
   .btn-danger-outline {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white border border-rose-200 text-rose-700 text-sm font-medium hover:bg-rose-50 transition-colors;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-transparent border border-rose-300 text-rose-700 text-sm font-medium hover:bg-rose-50 transition-colors;
   }
 
   .btn-danger-solid {
-    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 text-white text-sm font-medium hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-rose-600 text-white text-sm font-semibold hover:bg-rose-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .pill-success {
-    @apply inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full ring-1 bg-emerald-50 text-emerald-700 ring-emerald-200;
+    @apply inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700;
   }
 
   .pill-warning {
-    @apply inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full ring-1 bg-amber-50 text-amber-700 ring-amber-200;
+    @apply inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-700;
   }
 
   .pill-danger {
-    @apply inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full ring-1 bg-rose-50 text-rose-700 ring-rose-200;
+    @apply inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-rose-50 text-rose-700;
   }
 
   .pill-info {
-    @apply inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full ring-1 bg-indigo-50 text-indigo-700 ring-indigo-200;
+    @apply inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700;
   }
 
   .pill-neutral {
-    @apply inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-0.5 rounded-full ring-1 bg-slate-50 text-slate-600 ring-slate-200;
+    @apply inline-flex items-center gap-1.5 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600;
+  }
+
+  /* Monospace caption used as a tile heading ("environments / pipeline order"). */
+  .tile-caption {
+    @apply font-mono text-xs text-ink-3;
   }
 }
