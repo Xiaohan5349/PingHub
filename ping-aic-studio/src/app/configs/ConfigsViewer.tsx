@@ -2098,24 +2098,18 @@ export function ConfigsViewer({ environments }: { environments: Environment[] })
         </select>
 
         {/* View toggle */}
-        <div className="flex rounded-md border border-slate-200 overflow-hidden text-xs font-medium">
+        <div className="seg">
           <button
             type="button"
             onClick={() => setView("sections")}
-            className={cn(
-              "px-3 py-1.5 transition-colors",
-              view === "sections" ? "bg-slate-800 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
-            )}
+            className={cn("seg-item", view === "sections" && "seg-item-active")}
           >
             Sections
           </button>
           <button
             type="button"
             onClick={() => setView("tree")}
-            className={cn(
-              "px-3 py-1.5 border-l border-slate-200 transition-colors",
-              view === "tree" ? "bg-slate-800 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
-            )}
+            className={cn("seg-item", view === "tree" && "seg-item-active")}
           >
             Tree
           </button>

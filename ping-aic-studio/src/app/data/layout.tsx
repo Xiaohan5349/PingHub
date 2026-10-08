@@ -5,8 +5,8 @@ export default function DataLayout({ children }: { children: React.ReactNode }) 
   return (
     <div className="space-y-2">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Data</h1>
-        <p className="text-slate-500 mt-1">
+        <h1 className="page-title">Data</h1>
+        <p className="section-subtitle mt-1">
           Pull managed object records or log records. After that, you can browse pulled managed objects here, or search local logs in the &ldquo;Logs&rdquo; tab.
         </p>
       </div>
