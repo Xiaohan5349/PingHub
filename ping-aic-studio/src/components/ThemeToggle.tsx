@@ -1,88 +1,61 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Monitor, Moon, Sun } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 
-/** What the user chose. "system" = follow the OS light/dark setting. */
-export type ThemePreference = "system" | "light" | "dark";
-type ResolvedTheme = "light" | "dark";
+type Theme = "light" | "dark";
 
 const STORAGE_KEY = "pinghub.theme"; // also read by the pre-paint script in app/layout.tsx
 
-/**
- * Decide which preference a click on the toggle moves to.
- *
- * @param current      the preference in effect before the click
- * @param systemIsDark whether the OS is currently in dark mode
- * @returns            the preference to switch to
- */
-export function nextThemePreference(current: ThemePreference, systemIsDark: boolean): ThemePreference {
-  // TODO(user): choose the click behaviour — see the note in the restyle hand-off.
-  void systemIsDark;
-  return current;
-}
-
-function readPreference(): ThemePreference {
+function storedTheme(): Theme | null {
   try {
     const v = localStorage.getItem(STORAGE_KEY);
-    return v === "light" || v === "dark" ? v : "system";
+    return v === "light" || v === "dark" ? v : null;
   } catch {
-    return "system";
+    return null;
   }
 }
 
-function systemDark(): boolean {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches;
-}
-
-function apply(pref: ThemePreference) {
-  const resolved: ResolvedTheme = pref === "system" ? (systemDark() ? "dark" : "light") : pref;
-  document.documentElement.dataset.theme = resolved;
-  try {
-    if (pref === "system") localStorage.removeItem(STORAGE_KEY);
-    else localStorage.setItem(STORAGE_KEY, pref);
-  } catch { /* storage blocked: theme still applies for this page view */ }
-}
-
-const LABEL: Record<ThemePreference, string> = {
-  system: "Theme: follow system",
-  light: "Theme: light",
-  dark: "Theme: dark",
-};
-
+/**
+ * Light/dark switch. Until the user clicks it, the theme follows the OS
+ * setting (live). A click flips to the other theme and remembers it, after
+ * which the OS setting no longer applies.
+ */
 export function ThemeToggle() {
-  // null until mounted: the server cannot know the stored preference.
-  const [pref, setPref] = useState<ThemePreference | null>(null);
+  // null until mounted: the server cannot know which theme the script chose.
+  const [theme, setTheme] = useState<Theme | null>(null);
 
-  useEffect(() => { setPref(readPreference()); }, []);
-
-  // While following the system, track OS changes live.
   useEffect(() => {
-    if (pref !== "system") return;
+    setTheme(document.documentElement.dataset.theme === "dark" ? "dark" : "light");
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => apply("system");
+    const onChange = () => {
+      if (storedTheme()) return; // an explicit choice wins over the OS
+      const next: Theme = mq.matches ? "dark" : "light";
+      document.documentElement.dataset.theme = next;
+      setTheme(next);
+    };
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
-  }, [pref]);
+  }, []);
 
-  const onClick = useCallback(() => {
-    if (!pref) return;
-    const next = nextThemePreference(pref, systemDark());
-    apply(next);
-    setPref(next);
-  }, [pref]);
+  const toggle = () => {
+    if (!theme) return;
+    const next: Theme = theme === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    try { localStorage.setItem(STORAGE_KEY, next); } catch { /* storage blocked: applies to this page view only */ }
+    setTheme(next);
+  };
 
-  const Icon = pref === "light" ? Sun : pref === "dark" ? Moon : Monitor;
-  const label = LABEL[pref ?? "system"];
+  const label = theme === "dark" ? "Switch to light theme" : "Switch to dark theme";
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={toggle}
       title={label}
       aria-label={label}
       className="w-9 h-9 rounded-lg grid place-items-center text-ink-2 hover:text-ink hover:bg-hover transition-colors"
     >
-      <Icon className="w-[18px] h-[18px]" />
+      {theme === "dark" ? <Moon className="w-[18px] h-[18px]" /> : theme === "light" ? <Sun className="w-[18px] h-[18px]" /> : null}
     </button>
   );
 }
