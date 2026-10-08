@@ -981,11 +981,11 @@ export function SettingsForm({ initialSettings, targetDirAbsolute, initialHasGit
               <dt className="text-slate-500">Remote</dt>
               <dd className="text-slate-900 font-mono break-all">{status.remote ?? "—"}</dd>
               <dt className="text-slate-500">Ahead / behind</dt>
-              <dd className="text-slate-900 font-mono">
+              <dd className="text-slate-900">
                 {status.ahead ?? 0} / {status.behind ?? 0}
               </dd>
               <dt className="text-slate-500">Uncommitted</dt>
-              <dd className="text-slate-900 font-mono">{status.dirtyCount ?? 0} file(s)</dd>
+              <dd className="text-slate-900">{status.dirtyCount ?? 0} file(s)</dd>
             </dl>
           ) : (
             <p className="text-xs text-slate-500">Click Refresh to load status.</p>
