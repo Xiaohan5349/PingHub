@@ -52,10 +52,10 @@ export interface DiffGraphCanvasProps {
 function defaultMiniMapNodeColor(n: Node): string {
   const d = n.data as { diffStatus?: DiffStatus };
   switch (d.diffStatus) {
-    case "added":    return "#10b981";
-    case "removed":  return "#ef4444";
-    case "modified": return "#f59e0b";
-    default:         return "#94a3b8";
+    case "added":    return "var(--color-emerald-500)";
+    case "removed":  return "var(--color-red-500)";
+    case "modified": return "var(--color-amber-500)";
+    default:         return "var(--color-slate-400)";
   }
 }
 
@@ -256,8 +256,8 @@ function DiffGraphCanvasInner({
       if (activeEdgeId)     opacity = isActive ? 1 : 0.06;
       else if (highlighted) opacity = onPath ? 1 : 0.06;
 
-      const baseStroke = (e.style?.stroke as string | undefined) ?? "#64748b";
-      const stroke = isHovered ? "#3b82f6" : isPinned ? "#7c3aed" : baseStroke;
+      const baseStroke = (e.style?.stroke as string | undefined) ?? "var(--color-slate-500)";
+      const stroke = isHovered ? "var(--color-blue-500)" : isPinned ? "var(--color-violet-600)" : baseStroke;
 
       return {
         ...e,
@@ -317,7 +317,7 @@ function DiffGraphCanvasInner({
       selectionMode={SelectionMode.Full}
       panOnDrag={[1, 2]}
     >
-      <Background color="#e2e8f0" gap={20} size={1} />
+      <Background color="var(--color-slate-200)" gap={20} size={1} />
       <Controls showInteractive={false} showFitView={false} />
       <MiniMap nodeColor={miniColor} zoomable pannable />
       {legend && <Panel position="top-left">{legend}</Panel>}

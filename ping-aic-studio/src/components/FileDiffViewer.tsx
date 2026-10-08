@@ -32,10 +32,10 @@ function highlightLine(raw: string): string {
     return escapeHtml(raw).replace(
         /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
         (match) => {
-            let color = "#60a5fa";
-            if (/^"/.test(match)) color = /:$/.test(match) ? "#94a3b8" : "#86efac";
-            else if (/true|false/.test(match)) color = "#fbbf24";
-            else if (/null/.test(match)) color = "#f87171";
+            let color = "var(--color-blue-400)";
+            if (/^"/.test(match)) color = /:$/.test(match) ? "var(--color-slate-400)" : "var(--color-green-300)";
+            else if (/true|false/.test(match)) color = "var(--color-amber-400)";
+            else if (/null/.test(match)) color = "var(--color-red-400)";
             return `<span style="color:${color}">${match}</span>`;
         },
     );

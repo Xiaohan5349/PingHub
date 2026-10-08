@@ -244,7 +244,7 @@ function JourneyDiffNodeComponent({ data }: NodeProps) {
       )}
       style={{ width: DIFF_NODE_W, height: h }}
     >
-      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "#94a3b8" }} />
+      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "var(--color-slate-400)" }} />
 
       {/* Status badge */}
       {badgeLabel && (
@@ -279,19 +279,19 @@ function JourneyDiffNodeComponent({ data }: NodeProps) {
             <Fragment key={outcome}>
               <span style={{
                 position: "absolute", right: 14, top: topPct,
-                transform: "translateY(-50%)", fontSize: 8, color: "#94a3b8",
-                fontFamily: "monospace", whiteSpace: "nowrap",
+                transform: "translateY(-50%)", fontSize: 8, color: "var(--color-slate-400)",
+                fontFamily: "var(--font-code)", whiteSpace: "nowrap",
                 maxWidth: 48, overflow: "hidden", textOverflow: "ellipsis",
                 pointerEvents: "none",
               }}>
                 {outcome}
               </span>
               <Handle id={outcome} type="source" position={Position.Right}
-                style={{ top: topPct, background: "#94a3b8" }} />
+                style={{ top: topPct, background: "var(--color-slate-400)" }} />
             </Fragment>
           );
         })
-        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "#94a3b8" }} />
+        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "var(--color-slate-400)" }} />
       }
     </div>
   );
@@ -303,7 +303,7 @@ function DiffStartNodeComponent(_: NodeProps) {
       className="rounded-full flex items-center justify-center shadow font-bold text-white text-[9px] bg-emerald-500"
       style={{ width: DIFF_START_SIZE, height: DIFF_START_SIZE }}
     >
-      <Handle type="source" position={Position.Right} style={{ background: "#059669" }} />
+      <Handle type="source" position={Position.Right} style={{ background: "var(--color-emerald-600)" }} />
       START
     </div>
   );
@@ -315,7 +315,7 @@ function DiffSuccessNodeComponent(_: NodeProps) {
       className="rounded-full border-2 border-emerald-400 bg-emerald-50 flex items-center justify-center shadow-sm font-bold text-emerald-700 text-[10px] text-center leading-tight"
       style={{ width: DIFF_TERM_SIZE, height: DIFF_TERM_SIZE }}
     >
-      <Handle type="target" position={Position.Left} style={{ background: "#34d399" }} />
+      <Handle type="target" position={Position.Left} style={{ background: "var(--color-emerald-400)" }} />
       ✓<br />OK
     </div>
   );
@@ -327,7 +327,7 @@ function DiffFailureNodeComponent(_: NodeProps) {
       className="rounded-full border-2 border-red-400 bg-red-50 flex items-center justify-center shadow-sm font-bold text-red-700 text-[10px] text-center leading-tight"
       style={{ width: DIFF_TERM_SIZE, height: DIFF_TERM_SIZE }}
     >
-      <Handle type="target" position={Position.Left} style={{ background: "#f87171" }} />
+      <Handle type="target" position={Position.Left} style={{ background: "var(--color-red-400)" }} />
       ✗<br />Fail
     </div>
   );
@@ -365,7 +365,7 @@ function PageGroupDiffNodeComponent({ data }: NodeProps) {
       )}
       style={{ width: DIFF_PAGE_GROUP_W, height: h, position: "relative" }}
     >
-      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "#94a3b8" }} />
+      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "var(--color-slate-400)" }} />
       <div className="px-3 pt-2 pb-1 border-b border-violet-200/80">
         <p className="text-[9px] font-semibold text-violet-500 uppercase tracking-wider">Page Node</p>
         <p className="text-[11px] font-medium text-slate-700 leading-tight truncate">{d.label}</p>
@@ -373,9 +373,9 @@ function PageGroupDiffNodeComponent({ data }: NodeProps) {
       {outcomes.length > 0
         ? outcomes.map((outcome, i) => {
           const topPct = `${((i + 0.5) / outcomes.length) * 100}%`;
-          return <Handle key={outcome} id={outcome} type="source" position={Position.Right} style={{ top: topPct, background: "#94a3b8" }} />;
+          return <Handle key={outcome} id={outcome} type="source" position={Position.Right} style={{ top: topPct, background: "var(--color-slate-400)" }} />;
         })
-        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "#94a3b8" }} />
+        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "var(--color-slate-400)" }} />
       }
     </div>
   );
@@ -413,14 +413,14 @@ const nodeTypes = {
 
 const journeyMiniMapNodeColor = (n: Node): string => {
   if (n.data.diffStatus === "modified") {
-    if (n.data.modifiedReason === "script") return "#f97316";
-    if (n.data.modifiedReason === "subjourney") return "#8b5cf6";
-    return "#f59e0b";
+    if (n.data.modifiedReason === "script") return "var(--color-orange-500)";
+    if (n.data.modifiedReason === "subjourney") return "var(--color-violet-500)";
+    return "var(--color-amber-500)";
   }
   switch (n.data.diffStatus as "added" | "removed" | "unchanged") {
-    case "added": return "#10b981";
-    case "removed": return "#ef4444";
-    default: return "#94a3b8";
+    case "added": return "var(--color-emerald-500)";
+    case "removed": return "var(--color-red-500)";
+    default: return "var(--color-slate-400)";
   }
 };
 
@@ -709,10 +709,10 @@ function highlightLine(raw: string): string {
   return escapeHtml(raw).replace(
     /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
     (match) => {
-      let color = "#60a5fa";
-      if (/^"/.test(match)) color = /:$/.test(match) ? "#94a3b8" : "#86efac";
-      else if (/true|false/.test(match)) color = "#fbbf24";
-      else if (/null/.test(match)) color = "#f87171";
+      let color = "var(--color-blue-400)";
+      if (/^"/.test(match)) color = /:$/.test(match) ? "var(--color-slate-400)" : "var(--color-green-300)";
+      else if (/true|false/.test(match)) color = "var(--color-amber-400)";
+      else if (/null/.test(match)) color = "var(--color-red-400)";
       return `<span style="color:${color}">${match}</span>`;
     },
   );
