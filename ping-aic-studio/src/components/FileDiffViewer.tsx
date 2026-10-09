@@ -32,10 +32,10 @@ function highlightLine(raw: string): string {
     return escapeHtml(raw).replace(
         /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
         (match) => {
-            let color = "#60a5fa";
-            if (/^"/.test(match)) color = /:$/.test(match) ? "#94a3b8" : "#86efac";
-            else if (/true|false/.test(match)) color = "#fbbf24";
-            else if (/null/.test(match)) color = "#f87171";
+            let color = "var(--color-blue-400)";
+            if (/^"/.test(match)) color = /:$/.test(match) ? "var(--color-slate-400)" : "var(--color-green-300)";
+            else if (/true|false/.test(match)) color = "var(--color-amber-400)";
+            else if (/null/.test(match)) color = "var(--color-red-400)";
             return `<span style="color:${color}">${match}</span>`;
         },
     );
@@ -100,7 +100,7 @@ export function FileDiffViewer({ aContent, bContent, aLabel, bLabel, fileName }:
 
     return (
         <div className="h-full flex flex-col">
-            <div className="px-3 py-1.5 border-b border-slate-700 bg-slate-900 flex items-center gap-3 text-[11px] text-slate-300 shrink-0">
+            <div className="px-3 py-1.5 border-b border-slate-700 bg-slate-900 code-surface flex items-center gap-3 text-[11px] text-slate-300 shrink-0">
                 <span className="flex items-center gap-1">
                     <span className="px-1.5 py-0.5 rounded bg-rose-900/50 text-rose-200 font-mono">A</span>
                     <span className="truncate max-w-[14rem]" title={aLabel}>{aLabel}</span>
@@ -118,7 +118,7 @@ export function FileDiffViewer({ aContent, bContent, aLabel, bLabel, fileName }:
                     )}
                 </span>
             </div>
-            <div className="flex flex-1 min-h-0 bg-slate-950 overflow-hidden">
+            <div className="flex flex-1 min-h-0 bg-slate-950 code-surface overflow-hidden">
                 <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-auto text-[11px] font-mono leading-5">
                     <table className="min-w-full border-collapse">
                         <tbody>
@@ -128,7 +128,7 @@ export function FileDiffViewer({ aContent, bContent, aLabel, bLabel, fileName }:
                                     lineIdx += item.count;
                                     const isOpen = expanded.has(si);
                                     return (
-                                        <tr key={`e-${hi}`} className="bg-slate-900">
+                                        <tr key={`e-${hi}`} className="bg-slate-900 code-surface">
                                             <td colSpan={4} className="py-0.5 px-3 text-center">
                                                 <button
                                                     type="button"

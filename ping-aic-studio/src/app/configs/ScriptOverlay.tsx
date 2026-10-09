@@ -26,9 +26,9 @@ export function ScriptOverlay({ name, content, onClose }: { name: string; conten
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950">
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-950 code-surface">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900 shrink-0">
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900 code-surface shrink-0">
         <svg className="w-4 h-4 text-violet-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
         </svg>

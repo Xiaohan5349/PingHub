@@ -11,8 +11,8 @@ export default function EnvironmentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Environments</h1>
-        <p className="text-slate-500 mt-1">
+        <h1 className="page-title">Environments</h1>
+        <p className="section-subtitle mt-1">
           Configure your Ping AIC tenant environments and their credentials.
         </p>
       </div>

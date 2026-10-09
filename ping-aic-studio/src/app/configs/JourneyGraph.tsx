@@ -138,7 +138,7 @@ function JourneyNodeComponent({ data }: NodeProps) {
       )}
       style={{ width: NODE_W, height: h, position: "relative" }}
     >
-      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "#94a3b8" }} />
+      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "var(--color-slate-400)" }} />
 
       <div className="px-3 pt-2" style={{ paddingRight: outcomes.length > 0 ? 56 : 12 }}>
         <p className="text-[11px] font-medium text-slate-700 leading-snug break-words">{d.label}</p>
@@ -152,19 +152,19 @@ function JourneyNodeComponent({ data }: NodeProps) {
             <Fragment key={outcome}>
               <span style={{
                 position: "absolute", right: 14, top: topPct,
-                transform: "translateY(-50%)", fontSize: 8, color: "#94a3b8",
-                fontFamily: "monospace", whiteSpace: "nowrap",
+                transform: "translateY(-50%)", fontSize: 8, color: "var(--color-slate-400)",
+                fontFamily: "var(--font-code)", whiteSpace: "nowrap",
                 maxWidth: 48, overflow: "hidden", textOverflow: "ellipsis",
                 pointerEvents: "none",
               }}>
                 {outcome}
               </span>
               <Handle id={outcome} type="source" position={Position.Right}
-                style={{ top: topPct, background: "#94a3b8" }} />
+                style={{ top: topPct, background: "var(--color-slate-400)" }} />
             </Fragment>
           );
         })
-        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "#94a3b8" }} />
+        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "var(--color-slate-400)" }} />
       }
     </div>
   );
@@ -191,7 +191,7 @@ function PageGroupNodeComponent({ data }: NodeProps) {
       )}
       style={{ width: PAGE_GROUP_W, height: h, position: "relative" }}
     >
-      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "#94a3b8" }} />
+      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "var(--color-slate-400)" }} />
 
       {/* Header */}
       <div className="px-3 pt-2 pb-1 border-b border-violet-200/80">
@@ -204,10 +204,10 @@ function PageGroupNodeComponent({ data }: NodeProps) {
           const topPct = `${((i + 0.5) / outcomes.length) * 100}%`;
           return (
             <Handle key={outcome} id={outcome} type="source" position={Position.Right}
-              style={{ top: topPct, background: "#94a3b8" }} />
+              style={{ top: topPct, background: "var(--color-slate-400)" }} />
           );
         })
-        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "#94a3b8" }} />
+        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "var(--color-slate-400)" }} />
       }
     </div>
   );
@@ -233,7 +233,7 @@ function StartNodeComponent(_: NodeProps) {
   return (
     <div className="rounded-full flex items-center justify-center shadow font-bold text-white text-[9px] bg-emerald-500 cursor-pointer active:cursor-grabbing"
       style={{ width: START_SIZE, height: START_SIZE }}>
-      <Handle type="source" position={Position.Right} style={{ background: "#059669" }} />
+      <Handle type="source" position={Position.Right} style={{ background: "var(--color-emerald-600)" }} />
       START
     </div>
   );
@@ -246,7 +246,7 @@ function SuccessNodeComponent({ data }: NodeProps) {
       "rounded-full border-2 flex items-center justify-center shadow-sm font-bold text-emerald-700 text-[10px] text-center leading-tight cursor-pointer active:cursor-grabbing",
       d.isSelected ? "bg-emerald-100 border-emerald-500 ring-2 ring-emerald-200" : "bg-emerald-50 border-emerald-400"
     )} style={{ width: TERM_SIZE, height: TERM_SIZE }}>
-      <Handle type="target" position={Position.Left} style={{ background: "#34d399" }} />
+      <Handle type="target" position={Position.Left} style={{ background: "var(--color-emerald-400)" }} />
       ✓<br />OK
     </div>
   );
@@ -259,7 +259,7 @@ function FailureNodeComponent({ data }: NodeProps) {
       "rounded-full border-2 flex items-center justify-center shadow-sm font-bold text-red-700 text-[10px] text-center leading-tight cursor-pointer active:cursor-grabbing",
       d.isSelected ? "bg-red-100 border-red-500 ring-2 ring-red-200" : "bg-red-50 border-red-400"
     )} style={{ width: TERM_SIZE, height: TERM_SIZE }}>
-      <Handle type="target" position={Position.Left} style={{ background: "#f87171" }} />
+      <Handle type="target" position={Position.Left} style={{ background: "var(--color-red-400)" }} />
       ✗<br />Fail
     </div>
   );
@@ -276,12 +276,12 @@ function ChainCollapsedNodeComponent({ data }: NodeProps) {
       style={{ width: CHAIN_W, height: CHAIN_H, position: "relative" }}
       title="Click to expand chain"
     >
-      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "#94a3b8" }} />
+      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "var(--color-slate-400)" }} />
       <div className="px-3 py-1 flex flex-col justify-center h-full">
         <p className="text-[11px] font-medium text-slate-700 leading-tight">⋯ {d.count} steps</p>
         <p className="text-[9px] text-slate-400 truncate">{d.typesSummary}</p>
       </div>
-      <Handle type="source" position={Position.Right} style={{ top: "50%", background: "#94a3b8" }} />
+      <Handle type="source" position={Position.Right} style={{ top: "50%", background: "var(--color-slate-400)" }} />
     </div>
   );
 }
@@ -319,7 +319,7 @@ function parseJourney(json: string, pageConfigs?: Map<string, PageNodeConfig>): 
   if (data.entryNodeId && data.staticNodes?.["startNode"]) {
     rfEdges.push({
       id: "__start__", source: "startNode", target: data.entryNodeId,
-      style: { stroke: "#10b981", strokeWidth: 2 }
+      style: { stroke: "var(--color-emerald-500)", strokeWidth: 2 }
     });
   }
 
@@ -377,9 +377,9 @@ function parseJourney(json: string, pageConfigs?: Map<string, PageNodeConfig>): 
         source: id, sourceHandle: outcomeId,
         target: targetId,
         label: outcomeId === "outcome" ? undefined : outcomeId,
-        style: { stroke: toFailure ? "#f87171" : toSuccess ? "#34d399" : "#64748b", strokeWidth: 1.5 },
-        labelStyle: { fontSize: 9, fill: "#64748b" },
-        labelBgStyle: { fill: "#f8fafc", fillOpacity: 0.9 },
+        style: { stroke: toFailure ? "var(--color-red-400)" : toSuccess ? "var(--color-emerald-400)" : "var(--color-slate-500)", strokeWidth: 1.5 },
+        labelStyle: { fontSize: 9, fill: "var(--color-slate-500)" },
+        labelBgStyle: { fill: "var(--color-slate-50)", fillOpacity: 0.9 },
         labelBgPadding: [3, 5] as [number, number],
         labelBgBorderRadius: 3,
       });
@@ -1021,7 +1021,7 @@ function NodeInfoDrawer({
                         </button>
                       </div>
                       {/* Code preview */}
-                      <div className="flex-1 overflow-auto bg-slate-950">
+                      <div className="flex-1 overflow-auto bg-slate-950 code-surface">
                         <pre
                           className="text-[10px] font-mono leading-relaxed p-3 text-slate-300"
                           dangerouslySetInnerHTML={{ __html: scriptHighlighted! }}
@@ -1609,8 +1609,8 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
       if (activeEdgeId) opacity = isActive ? 1 : 0.25;
       else if (highlighted) opacity = onPath ? 1 : 0.25;
 
-      const baseStroke = (e.style?.stroke as string | undefined) ?? "#64748b";
-      const stroke = isHovered ? "#3b82f6" : isPinned ? "#7c3aed" : baseStroke;
+      const baseStroke = (e.style?.stroke as string | undefined) ?? "var(--color-slate-500)";
+      const stroke = isHovered ? "var(--color-blue-500)" : isPinned ? "var(--color-violet-600)" : baseStroke;
 
       return {
         ...e,
@@ -1861,7 +1861,7 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
             if (displayView === "table") return <div className="h-full overflow-auto"><JourneyTableView json={activeJson} environment={environment} journeyId={activeJourneyId} /></div>;
             if (displayView === "swimlane") return <div className="h-full overflow-auto"><JourneySwimLaneView json={activeJson} /></div>;
             if (displayView === "json") return (
-              <div className="h-full overflow-auto bg-slate-950 p-4">
+              <div className="h-full overflow-auto bg-slate-950 code-surface p-4">
                 <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap break-all">{activeJson}</pre>
               </div>
             );
@@ -1922,7 +1922,7 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
                 )}
               </>
             )}
-            <Background color="#e2e8f0" gap={20} size={1} />
+            <Background color="var(--color-slate-200)" gap={20} size={1} />
             <Controls showInteractive={false} showFitView={false}>
               <ControlButton
                 onClick={() => { shouldAdjustViewport.current = true; fitView({ duration: 400, padding: 0.25 }); }}
@@ -1936,11 +1936,11 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
             {!compact && (
               <MiniMap
                 nodeColor={(n) =>
-                  n.type === "successNode" ? "#34d399" :
-                    n.type === "failureNode" ? "#f87171" :
-                      n.type === "startNode" ? "#10b981" :
-                        n.type === "pageGroup" ? "#ddd6fe" :
-                          n.type === "pageChild" ? "#ede9fe" : "#cbd5e1"
+                  n.type === "successNode" ? "var(--color-emerald-400)" :
+                    n.type === "failureNode" ? "var(--color-red-400)" :
+                      n.type === "startNode" ? "var(--color-emerald-500)" :
+                        n.type === "pageGroup" ? "var(--color-violet-200)" :
+                          n.type === "pageChild" ? "var(--color-violet-100)" : "var(--color-slate-300)"
                 }
                 zoomable pannable
               />
@@ -1987,7 +1987,7 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
               <div
                 ref={modalRef}
                 tabIndex={-1}
-                className="bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden outline-none"
+                className="bg-tile rounded-[18px] ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)] flex flex-col overflow-hidden outline-none"
                 style={{
                   width: previewModal.nodeType === "InnerTreeEvaluatorNode" ? "80vw" : "60vw",
                   maxWidth: 960,
@@ -2059,7 +2059,7 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
                   {previewModal.loading ? (
                     <div className="flex items-center justify-center h-full text-sm text-slate-400">Loading…</div>
                   ) : previewModal.nodeType === "ScriptedDecisionNode" ? (
-                    <div className="h-full flex flex-col overflow-hidden bg-slate-950">
+                    <div className="h-full flex flex-col overflow-hidden bg-slate-950 code-surface">
                       {previewModal.scriptName && (
                         <p className="px-4 pt-3 pb-1 text-[10px] font-medium text-slate-400 shrink-0">{previewModal.scriptName}</p>
                       )}

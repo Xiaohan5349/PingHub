@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRegistry } from "@/lib/data/job-registry";
-import { getController } from "../../pull/route";
+import { getController } from "../../pull/route-controllers";
 
 export const dynamic = "force-dynamic";
 

@@ -60,17 +60,17 @@ export function highlightJs(code: string): string {
     if (c === "/" && code[i + 1] === "/") {
       const end = code.indexOf("\n", i);
       const text = end === -1 ? code.slice(i) : code.slice(i, end);
-      out.push(span("#6b7280", text));
+      out.push(span("var(--color-gray-500)", text));
       i += text.length;
     } else if (c === "/" && code[i + 1] === "*") {
       const end = code.indexOf("*/", i + 2);
       const text = end === -1 ? code.slice(i) : code.slice(i, end + 2);
-      out.push(span("#6b7280", text));
+      out.push(span("var(--color-gray-500)", text));
       i += text.length;
     } else if (c === "/" && canBeRegex) {
       const re = parseRegexLiteral(code, i);
       if (re) {
-        out.push(span("#f59e0b", re.text));
+        out.push(span("var(--color-amber-500)", re.text));
         i = re.end;
         canBeRegex = false;
         continue;
@@ -85,22 +85,22 @@ export function highlightJs(code: string): string {
         if (code[j] === "\\") j++;
         j++;
       }
-      out.push(span("#86efac", code.slice(i, j + 1)));
+      out.push(span("var(--color-green-300)", code.slice(i, j + 1)));
       i = j + 1;
       canBeRegex = false;
     } else if (/[a-zA-Z_$]/.test(c)) {
       let j = i + 1;
       while (j < code.length && /[a-zA-Z0-9_$]/.test(code[j])) j++;
       const word = code.slice(i, j);
-      if (JS_KEYWORDS.has(word))      out.push(span("#c084fc", word, true));
-      else if (JS_BUILTINS.has(word)) out.push(span("#f87171", word));
+      if (JS_KEYWORDS.has(word))      out.push(span("var(--color-purple-400)", word, true));
+      else if (JS_BUILTINS.has(word)) out.push(span("var(--color-red-400)", word));
       else                            out.push(esc(word));
       i = j;
       canBeRegex = REGEX_CONTEXT_KEYWORDS.has(word);
     } else if (/[0-9]/.test(c)) {
       let j = i + 1;
       while (j < code.length && /[0-9._xXeEbBoO]/.test(code[j])) j++;
-      out.push(span("#fbbf24", code.slice(i, j)));
+      out.push(span("var(--color-amber-400)", code.slice(i, j)));
       i = j;
       canBeRegex = false;
     } else {
@@ -126,13 +126,13 @@ export function highlightJson(raw: string): string {
     .replace(
       /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
       (match) => {
-        let color = "#60a5fa";
+        let color = "var(--color-blue-400)";
         if (/^"/.test(match)) {
-          color = /:$/.test(match) ? "#94a3b8" : "#86efac";
+          color = /:$/.test(match) ? "var(--color-slate-400)" : "var(--color-green-300)";
         } else if (/true|false/.test(match)) {
-          color = "#fbbf24";
+          color = "var(--color-amber-400)";
         } else if (/null/.test(match)) {
-          color = "#f87171";
+          color = "var(--color-red-400)";
         }
         return `<span style="color:${color}">${match}</span>`;
       }
@@ -158,7 +158,7 @@ export function withLineNumbers(highlightedHtml: string): string {
   return lines
     .map(
       (line, i) =>
-        `<span style="display:inline-block;width:${gutterWidth + 1}ch;text-align:right;padding-right:1.5ch;margin-right:1ch;border-right:1px solid #334155;color:#64748b;user-select:none">${i + 1}</span>${line}`,
+        `<span style="display:inline-block;width:${gutterWidth + 1}ch;text-align:right;padding-right:1.5ch;margin-right:1ch;border-right:1px solid var(--color-slate-700);color:var(--color-slate-500);user-select:none">${i + 1}</span>${line}`,
     )
     .join("\n");
 }
@@ -174,17 +174,17 @@ export interface HighlightToken {
 // Color palette — kept as named constants so highlightJs and highlightJsTokens
 // stay in sync if one changes. Rough scheme: cool hues for structural tokens,
 // warm hues for values/literals.
-const C_COMMENT  = "#6b7280";
-const C_KEYWORD  = "#c084fc";
-const C_BUILTIN  = "#f87171";
-const C_STRING   = "#86efac";
-const C_NUMBER   = "#fbbf24";
-const C_REGEX    = "#f59e0b";
-const C_FN_CALL  = "#38bdf8";
-const C_PROPERTY = "#22d3ee";
-const C_OPERATOR = "#94a3b8";
-const C_PUNCT    = "#64748b";
-const C_INTERP   = "#fb923c";
+const C_COMMENT  = "var(--color-gray-500)";
+const C_KEYWORD  = "var(--color-purple-400)";
+const C_BUILTIN  = "var(--color-red-400)";
+const C_STRING   = "var(--color-green-300)";
+const C_NUMBER   = "var(--color-amber-400)";
+const C_REGEX    = "var(--color-amber-500)";
+const C_FN_CALL  = "var(--color-sky-400)";
+const C_PROPERTY = "var(--color-cyan-400)";
+const C_OPERATOR = "var(--color-slate-400)";
+const C_PUNCT    = "var(--color-slate-500)";
+const C_INTERP   = "var(--color-orange-400)";
 
 // Characters that form (possibly multi-char) operators when clustered.
 // `.` is excluded — treated as punctuation — so `a?.b` renders as `?` op + `.` punct.
@@ -397,10 +397,10 @@ export function highlightJsonTokens(raw: string): HighlightToken[] {
     const idx = m.index ?? 0;
     if (idx > last) out.push({ text: formatted.slice(last, idx) });
     const match = m[0];
-    let color = "#60a5fa";
-    if (match.startsWith('"')) color = match.trimEnd().endsWith(":") ? "#94a3b8" : "#86efac";
-    else if (match === "true" || match === "false") color = "#fbbf24";
-    else if (match === "null") color = "#f87171";
+    let color = "var(--color-blue-400)";
+    if (match.startsWith('"')) color = match.trimEnd().endsWith(":") ? "var(--color-slate-400)" : "var(--color-green-300)";
+    else if (match === "true" || match === "false") color = "var(--color-amber-400)";
+    else if (match === "null") color = "var(--color-red-400)";
     out.push({ text: match, color });
     last = idx + match.length;
   }

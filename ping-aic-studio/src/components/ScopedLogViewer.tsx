@@ -312,9 +312,9 @@ export function ScopedLogViewer({
       </div>
 
       {/* ── Header ───────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 border-b border-slate-700">
+      <div className="flex items-center gap-2 px-3 py-2 bg-slate-800 code-surface border-b border-slate-700">
         <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", statusDotClass)} />
-        <span className={cn("text-xs font-mono font-medium", statusTextColor)}>
+        <span className={cn("text-xs font-medium", statusTextColor)}>
           {statusText}
         </span>
         {logs.length > 0 && (
@@ -352,7 +352,7 @@ export function ScopedLogViewer({
 
       {/* ── Search bar ───────────────────────────────────────────────────── */}
       {searchOpen && (
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 border-b border-slate-700">
+        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 code-surface border-b border-slate-700">
           <svg className="w-3.5 h-3.5 text-slate-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -366,7 +366,7 @@ export function ScopedLogViewer({
             className="flex-1 bg-transparent text-xs font-mono text-slate-200 placeholder-slate-600 outline-none"
           />
           {search && (
-            <span className="text-[10px] font-mono text-slate-500 shrink-0">
+            <span className="text-[10px] text-slate-500 shrink-0">
               {matchCount} match{matchCount !== 1 ? "es" : ""}
             </span>
           )}
@@ -418,7 +418,7 @@ export function ScopedLogViewer({
       })}
 
       {/* ── Scope sections ───────────────────────────────────────────────── */}
-      <div className="bg-slate-900">
+      <div className="bg-slate-900 code-surface">
         {hasSections ? (
           sections.map((section) => {
             const isOpen = expanded.has(section.scope);

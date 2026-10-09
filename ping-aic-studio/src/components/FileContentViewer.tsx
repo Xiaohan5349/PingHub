@@ -144,7 +144,7 @@ const Row = memo(function Row({
       <div
         aria-hidden
         className={cn(
-          "sticky left-0 z-10 bg-slate-900 select-none flex items-center pl-2 pr-3 border-r border-slate-800 shrink-0",
+          "sticky left-0 z-10 bg-slate-900 code-surface select-none flex items-center pl-2 pr-3 border-r border-slate-800 shrink-0",
           isHighlighted && "bg-amber-900/40 font-semibold",
           isActive && "bg-slate-800/80 border-l-2 border-l-sky-400 pl-[6px]",
         )}
@@ -447,7 +447,7 @@ export function FileContentViewer({
       onScroll={onScroll}
       onDoubleClick={handleDoubleClick}
       className={cn(
-        "h-full overflow-auto bg-slate-900 text-slate-300 code-mono text-[13px] leading-[1.55] scrollbar-thin",
+        "h-full overflow-auto bg-slate-900 code-surface text-slate-300 code-mono text-[13px] leading-[1.55] scrollbar-thin",
         className,
       )}
     >

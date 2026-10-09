@@ -38,7 +38,7 @@ function StartNode() {
       <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
         <path d="M8 5v14l11-7z" />
       </svg>
-      <Handle type="source" position={Position.Right} style={{ background: "#10b981" }} />
+      <Handle type="source" position={Position.Right} style={{ background: "var(--color-emerald-500)" }} />
     </div>
   );
 }
@@ -50,7 +50,7 @@ function EndNode() {
       style={{ width: CIRCLE_SZ, height: CIRCLE_SZ }}
     >
       <div className="w-4 h-4 rounded-full border-2 border-slate-300" />
-      <Handle type="target" position={Position.Left} style={{ background: "#475569" }} />
+      <Handle type="target" position={Position.Left} style={{ background: "var(--color-slate-600)" }} />
     </div>
   );
 }
@@ -111,7 +111,7 @@ function DiffStepNode({ data }: NodeProps) {
       )}
       style={{ width: w, height: h }}
     >
-      <Handle type="target" position={Position.Left}  style={{ background: "#94a3b8" }} />
+      <Handle type="target" position={Position.Left}  style={{ background: "var(--color-slate-400)" }} />
       <div className={cn("h-full flex flex-col justify-between", d.isCompact ? "px-1.5 py-1" : "px-2.5 py-2")}>
         <div className="flex items-start gap-1.5">
           {KIND_ICON[d.kind]}
@@ -130,7 +130,7 @@ function DiffStepNode({ data }: NodeProps) {
           </div>
         )}
       </div>
-      <Handle type="source" position={Position.Right} style={{ background: "#94a3b8" }} />
+      <Handle type="source" position={Position.Right} style={{ background: "var(--color-slate-400)" }} />
     </div>
   );
 }
@@ -211,8 +211,8 @@ function buildGraph(diffData: WorkflowDiffData, focusedId: string | null): { nod
       id:        `start->${diffData.startConnection}`,
       source:    "startNode",
       target:    diffData.startConnection,
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" },
-      style:     { stroke: "#94a3b8" },
+      markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-slate-400)" },
+      style:     { stroke: "var(--color-slate-400)" },
     });
   }
 
@@ -221,15 +221,15 @@ function buildGraph(diffData: WorkflowDiffData, focusedId: string | null): { nod
       const target = ns.step || "endNode";
       const label  = ns.condition ? `${ns.outcome} [${ns.condition}]` : ns.outcome;
       const edgeColor =
-        step.diffStatus === "added"   ? "#34d399" :
-        step.diffStatus === "removed" ? "#f87171" :
-        step.diffStatus === "modified"? "#fbbf24" : "#94a3b8";
+        step.diffStatus === "added"   ? "var(--color-emerald-400)" :
+        step.diffStatus === "removed" ? "var(--color-red-400)" :
+        step.diffStatus === "modified"? "var(--color-amber-400)" : "var(--color-slate-400)";
       edges.push({
         id:             `${step.id}->${target}::${ns.outcome}`,
         source:         step.id,
         target,
         label,
-        labelStyle:     { fontSize: 9, fill: "#64748b" },
+        labelStyle:     { fontSize: 9, fill: "var(--color-slate-500)" },
         labelBgStyle:   { fill: "rgba(255,255,255,0.85)", fillOpacity: 1 },
         labelBgPadding: [3, 2] as [number, number],
         markerEnd:      { type: MarkerType.ArrowClosed, color: edgeColor },
@@ -467,7 +467,7 @@ export function WorkflowDiffGraphModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
+      <div className="bg-tile rounded-[18px] ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)] w-full max-w-6xl h-[85vh] flex flex-col overflow-hidden">
 
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-slate-200 shrink-0">

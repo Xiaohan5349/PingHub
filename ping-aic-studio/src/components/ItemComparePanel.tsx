@@ -205,7 +205,7 @@ export function ItemComparePanel({ environment, scope, item, itemLabel }: ItemCo
                         onClick={() => setReport(null)}
                     >
                         <div
-                            className="bg-white rounded-lg shadow-xl border border-slate-200 p-6 max-w-md text-sm text-slate-700"
+                            className="bg-tile rounded-xl ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)] border border-slate-200 p-6 max-w-md text-sm text-slate-700"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="font-semibold mb-2">No changes detected</div>

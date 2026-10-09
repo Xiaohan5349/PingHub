@@ -137,7 +137,7 @@ function ScopeRow({
         {/* Selectable: count + select-all */}
         {entry.selectable && entry.items.length > 0 && (
           <>
-            <span className={cn("text-[10px] tabular-nums font-mono", checkedCount > 0 ? "text-sky-700 font-semibold" : "text-slate-400")}>
+            <span className={cn("text-[10px] tabular-nums", checkedCount > 0 ? "text-sky-700 font-semibold" : "text-slate-400")}>
               {checkedCount > 0 ? `${checkedCount}/${entry.items.length}` : `0/${entry.items.length}`}
             </span>
             <button

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **New look: Bento theme with light and dark modes.** Follows the OS setting by default; the header toggle switches and remembers the choice. Light uses warm paper tones, dark uses graphite; code, log, diff and graph panes follow the theme.
+- **Grouped navigation.** The 14 pages are grouped into Dashboard, Pipeline, Explore, Observe and Setup menus, with the current group's pages as a second row of tabs.
+- **Dashboard tiles.** Pipeline order with tenant health, the most urgent upcoming AIC upgrade, and a tile per environment.
+- Consistent segmented controls and toggles across pages; dialogs and drawers share the tile style; system fonts replace the downloaded web fonts; monospace is kept for data such as ids, paths and logs.
+
+### Fixed
+
+- The data pull API route no longer re-exports a helper, which failed the route type check in webpack production builds.
+
 ## [0.4.0] - 2026-06-11
 
 ### Added

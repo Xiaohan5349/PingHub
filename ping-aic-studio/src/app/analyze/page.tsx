@@ -8,8 +8,8 @@ export default function AnalyzePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Report</h1>
-        <p className="text-slate-500 mt-1">
+        <h1 className="page-title">Report</h1>
+        <p className="section-subtitle mt-1">
           Journey execution history and ESV orphan reference reports.
         </p>
       </div>

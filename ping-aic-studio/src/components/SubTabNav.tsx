@@ -25,44 +25,18 @@ export function SubTabNav({
 }) {
   const pathname = usePathname();
 
-  if (variant === "segmented") {
-    return (
-      <nav className="inline-flex items-center gap-1 rounded-xl bg-slate-100 p-1 ring-1 ring-inset ring-slate-200 mb-4">
-        {tabs.map(({ href, label }) => {
-          const isActive = pathname === href || pathname.startsWith(href + "/");
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-white text-indigo-700 shadow-sm ring-1 ring-inset ring-slate-200"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-white/70",
-              )}
-            >
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
-    );
-  }
-
+  // Both variants render the shared segmented control; "segmented" keeps
+  // its historical extra bottom margin for the Data tab.
   return (
-    <nav className="flex items-center gap-0.5 border-b border-slate-200 pb-2 mb-4">
+    <nav className={cn("seg", variant === "segmented" ? "mb-4" : "mb-3")}>
       {tabs.map(({ href, label }) => {
         const isActive = pathname === href || pathname.startsWith(href + "/");
         return (
           <Link
             key={href}
             href={href}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-sm transition-colors",
-              isActive
-                ? "bg-indigo-50 text-indigo-700 font-medium ring-1 ring-inset ring-indigo-200"
-                : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
-            )}
+            aria-current={isActive ? "page" : undefined}
+            className={cn("seg-item", isActive && "seg-item-active")}
           >
             {label}
           </Link>

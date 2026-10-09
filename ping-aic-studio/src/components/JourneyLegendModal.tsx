@@ -32,7 +32,7 @@ export function JourneyLegendModal({ variant = "normal" }: Props) {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40" onClick={() => setOpen(false)} />
+          <div className="absolute inset-0 bg-overlay" onClick={() => setOpen(false)} />
           <div
             className="relative bg-white border border-slate-200 rounded-lg shadow-2xl w-[min(680px,100%)] max-h-[calc(100vh-2rem)] overflow-auto"
             onClick={(e) => e.stopPropagation()}

@@ -371,14 +371,14 @@ export function LogViewer({ logs, running, exitCode, onClear, expectedScopes }: 
           />
           {rawSearch && rawSearch !== search && (
             <span
-              className="text-[10px] font-mono text-slate-400 shrink-0"
+              className="text-[10px] text-slate-400 shrink-0"
               title="Press Enter to search"
             >
               Enter ↵
             </span>
           )}
           {search && (
-            <div className="flex items-center gap-1 text-[10px] font-mono text-slate-500 shrink-0">
+            <div className="flex items-center gap-1 text-[10px] text-slate-500 shrink-0">
               <button
                 onClick={goPrev}
                 disabled={matchCount === 0}
@@ -473,7 +473,7 @@ export function LogViewer({ logs, running, exitCode, onClear, expectedScopes }: 
       )}
 
       {/* Main log pane — flat stream of stdout/stderr/error/scope markers. */}
-      <div ref={mainPaneRef} className="overflow-y-auto bg-slate-900 p-4 font-mono text-[12px] leading-5 min-h-[320px] max-h-[560px] rounded-b-xl">
+      <div ref={mainPaneRef} className="overflow-y-auto bg-slate-900 code-surface p-4 font-mono text-[12px] leading-5 min-h-[320px] max-h-[560px] rounded-b-xl">
         {flatLines.length === 0 && !running && (
           <span className="text-slate-500">No output yet. Run a command to see logs.</span>
         )}

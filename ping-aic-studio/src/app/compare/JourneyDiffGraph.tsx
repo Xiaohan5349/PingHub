@@ -244,7 +244,7 @@ function JourneyDiffNodeComponent({ data }: NodeProps) {
       )}
       style={{ width: DIFF_NODE_W, height: h }}
     >
-      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "#94a3b8" }} />
+      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "var(--color-slate-400)" }} />
 
       {/* Status badge */}
       {badgeLabel && (
@@ -279,19 +279,19 @@ function JourneyDiffNodeComponent({ data }: NodeProps) {
             <Fragment key={outcome}>
               <span style={{
                 position: "absolute", right: 14, top: topPct,
-                transform: "translateY(-50%)", fontSize: 8, color: "#94a3b8",
-                fontFamily: "monospace", whiteSpace: "nowrap",
+                transform: "translateY(-50%)", fontSize: 8, color: "var(--color-slate-400)",
+                fontFamily: "var(--font-code)", whiteSpace: "nowrap",
                 maxWidth: 48, overflow: "hidden", textOverflow: "ellipsis",
                 pointerEvents: "none",
               }}>
                 {outcome}
               </span>
               <Handle id={outcome} type="source" position={Position.Right}
-                style={{ top: topPct, background: "#94a3b8" }} />
+                style={{ top: topPct, background: "var(--color-slate-400)" }} />
             </Fragment>
           );
         })
-        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "#94a3b8" }} />
+        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "var(--color-slate-400)" }} />
       }
     </div>
   );
@@ -303,7 +303,7 @@ function DiffStartNodeComponent(_: NodeProps) {
       className="rounded-full flex items-center justify-center shadow font-bold text-white text-[9px] bg-emerald-500"
       style={{ width: DIFF_START_SIZE, height: DIFF_START_SIZE }}
     >
-      <Handle type="source" position={Position.Right} style={{ background: "#059669" }} />
+      <Handle type="source" position={Position.Right} style={{ background: "var(--color-emerald-600)" }} />
       START
     </div>
   );
@@ -315,7 +315,7 @@ function DiffSuccessNodeComponent(_: NodeProps) {
       className="rounded-full border-2 border-emerald-400 bg-emerald-50 flex items-center justify-center shadow-sm font-bold text-emerald-700 text-[10px] text-center leading-tight"
       style={{ width: DIFF_TERM_SIZE, height: DIFF_TERM_SIZE }}
     >
-      <Handle type="target" position={Position.Left} style={{ background: "#34d399" }} />
+      <Handle type="target" position={Position.Left} style={{ background: "var(--color-emerald-400)" }} />
       ✓<br />OK
     </div>
   );
@@ -327,7 +327,7 @@ function DiffFailureNodeComponent(_: NodeProps) {
       className="rounded-full border-2 border-red-400 bg-red-50 flex items-center justify-center shadow-sm font-bold text-red-700 text-[10px] text-center leading-tight"
       style={{ width: DIFF_TERM_SIZE, height: DIFF_TERM_SIZE }}
     >
-      <Handle type="target" position={Position.Left} style={{ background: "#f87171" }} />
+      <Handle type="target" position={Position.Left} style={{ background: "var(--color-red-400)" }} />
       ✗<br />Fail
     </div>
   );
@@ -365,7 +365,7 @@ function PageGroupDiffNodeComponent({ data }: NodeProps) {
       )}
       style={{ width: DIFF_PAGE_GROUP_W, height: h, position: "relative" }}
     >
-      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "#94a3b8" }} />
+      <Handle type="target" position={Position.Left} style={{ top: "50%", background: "var(--color-slate-400)" }} />
       <div className="px-3 pt-2 pb-1 border-b border-violet-200/80">
         <p className="text-[9px] font-semibold text-violet-500 uppercase tracking-wider">Page Node</p>
         <p className="text-[11px] font-medium text-slate-700 leading-tight truncate">{d.label}</p>
@@ -373,9 +373,9 @@ function PageGroupDiffNodeComponent({ data }: NodeProps) {
       {outcomes.length > 0
         ? outcomes.map((outcome, i) => {
           const topPct = `${((i + 0.5) / outcomes.length) * 100}%`;
-          return <Handle key={outcome} id={outcome} type="source" position={Position.Right} style={{ top: topPct, background: "#94a3b8" }} />;
+          return <Handle key={outcome} id={outcome} type="source" position={Position.Right} style={{ top: topPct, background: "var(--color-slate-400)" }} />;
         })
-        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "#94a3b8" }} />
+        : <Handle type="source" position={Position.Right} style={{ top: "50%", background: "var(--color-slate-400)" }} />
       }
     </div>
   );
@@ -413,14 +413,14 @@ const nodeTypes = {
 
 const journeyMiniMapNodeColor = (n: Node): string => {
   if (n.data.diffStatus === "modified") {
-    if (n.data.modifiedReason === "script") return "#f97316";
-    if (n.data.modifiedReason === "subjourney") return "#8b5cf6";
-    return "#f59e0b";
+    if (n.data.modifiedReason === "script") return "var(--color-orange-500)";
+    if (n.data.modifiedReason === "subjourney") return "var(--color-violet-500)";
+    return "var(--color-amber-500)";
   }
   switch (n.data.diffStatus as "added" | "removed" | "unchanged") {
-    case "added": return "#10b981";
-    case "removed": return "#ef4444";
-    default: return "#94a3b8";
+    case "added": return "var(--color-emerald-500)";
+    case "removed": return "var(--color-red-500)";
+    default: return "var(--color-slate-400)";
   }
 };
 
@@ -514,7 +514,7 @@ function UnchangedScriptViewer({ name, content }: { name: string; content: strin
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" /></svg>
           </button>
         </div>
-        <div className="bg-slate-950 overflow-auto max-h-64">
+        <div className="bg-slate-950 code-surface overflow-auto max-h-64">
           <pre className="text-[9px] font-mono leading-relaxed p-2 text-slate-300" dangerouslySetInnerHTML={{ __html: highlighted }} />
         </div>
       </div>
@@ -559,9 +559,9 @@ function ScriptFileEntry({ f }: { f: FileDiff }) {
   return (
     <>
       {fullscreen && (
-        <div className="fixed inset-0 z-[80] flex flex-col bg-slate-950 overflow-hidden">
+        <div className="fixed inset-0 z-[80] flex flex-col bg-slate-950 code-surface overflow-hidden">
           {/* Fullscreen header */}
-          <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900 shrink-0">
+          <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-800 bg-slate-900 code-surface shrink-0">
             <svg className="w-4 h-4 text-violet-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
             </svg>
@@ -709,10 +709,10 @@ function highlightLine(raw: string): string {
   return escapeHtml(raw).replace(
     /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
     (match) => {
-      let color = "#60a5fa";
-      if (/^"/.test(match)) color = /:$/.test(match) ? "#94a3b8" : "#86efac";
-      else if (/true|false/.test(match)) color = "#fbbf24";
-      else if (/null/.test(match)) color = "#f87171";
+      let color = "var(--color-blue-400)";
+      if (/^"/.test(match)) color = /:$/.test(match) ? "var(--color-slate-400)" : "var(--color-green-300)";
+      else if (/true|false/.test(match)) color = "var(--color-amber-400)";
+      else if (/null/.test(match)) color = "var(--color-red-400)";
       return `<span style="color:${color}">${match}</span>`;
     },
   );
@@ -781,13 +781,13 @@ function SplitDiffView({ lines, fullscreen }: { lines: DiffLineLocal[]; fullscre
 
   return (
     <div className={cn(
-      "flex bg-slate-950 overflow-hidden",
+      "flex bg-slate-950 code-surface overflow-hidden",
       fullscreen ? "flex-1 min-h-0" : "max-h-[500px]",
     )}>
       <div ref={scrollRef} className="flex-1 overflow-auto text-[10px] font-mono leading-5">
         <table className="w-full border-collapse table-fixed">
           <thead>
-            <tr className="border-b border-slate-700 bg-slate-900 text-[9px] text-slate-500 sticky top-0 z-10">
+            <tr className="border-b border-slate-700 bg-slate-900 code-surface text-[9px] text-slate-500 sticky top-0 z-10">
               <th className="px-3 py-1 text-left font-normal border-r border-slate-700 w-1/2">Source</th>
               <th className="px-3 py-1 text-left font-normal w-1/2">Modified</th>
             </tr>
@@ -821,7 +821,7 @@ function InlineDiffView({ lines }: { lines: DiffLineLocal[] }) {
   const MAX = 300;
   const visible = lines.slice(0, MAX);
   return (
-    <div className="overflow-x-auto overflow-y-auto bg-slate-950 text-[10px] font-mono leading-5 max-h-64">
+    <div className="overflow-x-auto overflow-y-auto bg-slate-950 code-surface text-[10px] font-mono leading-5 max-h-64">
       <table className="min-w-full border-collapse">
         <tbody>
           {visible.map((l, i) => {
@@ -1364,7 +1364,7 @@ function ScriptDiffView({ lines }: { lines: DiffLineLocal[] }) {
               if (item.kind === "hunk") {
                 const count = item.endIdx - item.startIdx + 1;
                 return (
-                  <tr key={`hunk-${item.startIdx}`} className="bg-slate-900">
+                  <tr key={`hunk-${item.startIdx}`} className="bg-slate-900 code-surface">
                     <td colSpan={2} className="py-0.5">
                       <button
                         type="button"
@@ -2242,7 +2242,7 @@ export function JourneyDiffGraphModal({
               if (displayView === "table") return <div className="flex-1 overflow-auto"><JourneyTableView json={json} environment={env} journeyId={active.name} /></div>;
               if (displayView === "swimlane") return <div className="flex-1 overflow-auto"><JourneySwimLaneView json={json} /></div>;
               if (displayView === "json") return (
-                <div className="flex-1 overflow-auto bg-slate-950 p-4">
+                <div className="flex-1 overflow-auto bg-slate-950 code-surface p-4">
                   <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap break-all">{json}</pre>
                 </div>
               );
@@ -2471,7 +2471,7 @@ export function JourneyDiffGraphModal({
               {previewModal.loading ? (
                 <div className="flex items-center justify-center h-full text-sm text-slate-400">Loading…</div>
               ) : previewModal.nodeType === "ScriptedDecisionNode" ? (
-                <div className="h-full flex flex-col overflow-hidden bg-slate-950">
+                <div className="h-full flex flex-col overflow-hidden bg-slate-950 code-surface">
                   {previewModal.scriptName && (
                     <p className="px-4 pt-3 pb-1 text-[10px] font-medium text-slate-400 shrink-0">{previewModal.scriptName}</p>
                   )}

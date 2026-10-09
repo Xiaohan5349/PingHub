@@ -2256,7 +2256,7 @@ const TailTerminal = memo(function TailTerminal({
       >
         {entries.length === 0 ? (
           <div className="flex items-center justify-center h-full min-h-[120px]">
-            <span className="text-slate-400 text-xs font-mono animate-pulse">Waiting for log entries…</span>
+            <span className="text-slate-400 text-xs animate-pulse">Waiting for log entries…</span>
           </div>
         ) : wrapLines ? (
           /* Wrap mode: variable-height virtual list via @tanstack/react-virtual */
@@ -2573,7 +2573,7 @@ const EntryRow = memo(function EntryRow({
                 )}
                 {status && (
                   <span className={cn(
-                    "text-[10px] font-mono px-1 py-0.5 rounded leading-none",
+                    "text-[10px] px-1 py-0.5 rounded leading-none",
                     status === "SUCCESSFUL" ? "text-emerald-700 bg-emerald-50" : status === "FAILED" ? "text-red-700 bg-red-50" : "text-slate-500 bg-slate-50"
                   )}>
                     {status}
@@ -2588,7 +2588,7 @@ const EntryRow = memo(function EntryRow({
         </td>
       </tr>
       {expanded && (
-        <tr className="bg-slate-950 border-b border-slate-700">
+        <tr className="bg-slate-950 code-surface border-b border-slate-700">
           <td colSpan={6} className="p-0">
             <pre className="p-4 text-xs font-mono text-green-300 overflow-x-auto whitespace-pre-wrap break-all max-h-96 overflow-y-auto leading-5">
               {highlight(isText ? getTextPayload(entry) : JSON.stringify(entry.payload, null, 2))}
@@ -2720,7 +2720,7 @@ function TransactionDrilldown({
                         </td>
                       </tr>
                       {expandedIdx === i && (
-                        <tr className="bg-slate-950 border-b border-slate-700">
+                        <tr className="bg-slate-950 code-surface border-b border-slate-700">
                           <td colSpan={5} className="p-0">
                             <pre className="p-4 text-xs font-mono text-green-300 overflow-x-auto whitespace-pre-wrap break-all max-h-64 overflow-y-auto leading-5">
                               {JSON.stringify(entry.payload, null, 2)}
@@ -3895,7 +3895,7 @@ export function LogsExplorer({
           {/* Row 1: mode toggle + tail/search controls + keyword highlights */}
           <div className="flex items-center gap-2 px-4 py-2">
             {/* Mode toggle */}
-            <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+            <div className="seg-sm">
               {(["tail", "search", "transaction"] as LogMode[]).map((m) => (
                 <button
                   key={m}
@@ -3906,10 +3906,8 @@ export function LogsExplorer({
                   }}
                   disabled={loading || searching}
                   className={cn(
-                    "px-2 py-0.5 text-[11px] font-medium transition-colors",
-                    mode === m
-                      ? "bg-slate-900 text-white"
-                      : "bg-white text-slate-500 hover:bg-slate-50"
+                    "seg-sm-item",
+                    mode === m && "seg-sm-item-active"
                   )}
                 >
                   {m === "tail" ? "Tail" : m === "search" ? "Search" : "Transaction"}
@@ -4056,14 +4054,14 @@ export function LogsExplorer({
                   {/* Per-field Aa/[W] for Search keywords. Note: AIC's _queryFilter is
                       always case-insensitive substring; these toggles control how the
                       same terms are auto-highlighted in the rendered results. */}
-                  <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+                  <div className="seg-sm">
                     <button
                       type="button"
                       title="Case sensitive (auto-highlight only — AIC server is always case-insensitive)"
                       onClick={() => setSearchMatchCase((v) => !v)}
                       className={cn(
-                        "px-2 py-0.5 text-[11px] font-medium font-mono transition-colors",
-                        searchMatchCase ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                        "seg-sm-item font-mono",
+                        searchMatchCase && "seg-sm-item-active"
                       )}
                     >Aa</button>
                     <button
@@ -4071,12 +4069,12 @@ export function LogsExplorer({
                       title="Whole word (auto-highlight only — AIC server has no whole-word operator)"
                       onClick={() => setSearchWholeWord((v) => !v)}
                       className={cn(
-                        "px-2 py-0.5 text-[11px] font-medium font-mono border-l border-slate-300 transition-colors",
-                        searchWholeWord ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                        "seg-sm-item font-mono",
+                        searchWholeWord && "seg-sm-item-active"
                       )}
                     >[W]</button>
                   </div>
-                  <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+                  <div className="seg-sm">
                     {(["remote", "local"] as const).map((ds) => (
                       <button
                         key={ds}
@@ -4087,10 +4085,8 @@ export function LogsExplorer({
                           ? "Search the local archive (offline; text matches indexed fields only — pull data first via Data → Pull → Logs)"
                           : "Search live AIC"}
                         className={cn(
-                          "px-2 py-0.5 text-[11px] font-medium transition-colors",
-                          (config.dataSource ?? "remote") === ds
-                            ? "bg-slate-900 text-white"
-                            : "bg-white text-slate-500 hover:bg-slate-50",
+                          "seg-sm-item",
+                          (config.dataSource ?? "remote") === ds && "seg-sm-item-active",
                         )}
                       >
                         {ds === "remote" ? "Remote" : "Local"}
@@ -4188,14 +4184,14 @@ export function LogsExplorer({
               </button>
             )}
             {/* Per-field Aa/[W] for the Filter predicate */}
-            <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+            <div className="seg-sm">
               <button
                 type="button"
                 title="Case sensitive (Filter predicate)"
                 onClick={() => setFilterMatchCase((v) => !v)}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium font-mono transition-colors",
-                  filterMatchCase ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item font-mono",
+                  filterMatchCase && "seg-sm-item-active"
                 )}
               >Aa</button>
               <button
@@ -4203,8 +4199,8 @@ export function LogsExplorer({
                 title="Whole word (Filter predicate)"
                 onClick={() => setFilterWholeWord((v) => !v)}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium font-mono border-l border-slate-300 transition-colors",
-                  filterWholeWord ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item font-mono",
+                  filterWholeWord && "seg-sm-item-active"
                 )}
               >[W]</button>
             </div>
@@ -4249,14 +4245,14 @@ export function LogsExplorer({
                 Clear
               </button>
             )}
-            <div className="flex rounded border border-slate-300 overflow-hidden shrink-0" title="Highlight predicate; also drives auto-highlight rendering for Filter and Search terms">
+            <div className="seg-sm" title="Highlight predicate; also drives auto-highlight rendering for Filter and Search terms">
               <button
                 type="button"
                 title="Case sensitive (Highlight predicate; also controls how all auto-highlighted terms are rendered)"
                 onClick={() => setHighlightMatchCase((v) => !v)}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium font-mono transition-colors",
-                  highlightMatchCase ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item font-mono",
+                  highlightMatchCase && "seg-sm-item-active"
                 )}
               >Aa</button>
               <button
@@ -4264,8 +4260,8 @@ export function LogsExplorer({
                 title="Whole word (Highlight predicate; also controls how all auto-highlighted terms are rendered)"
                 onClick={() => setHighlightWholeWord((v) => !v)}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium font-mono border-l border-slate-300 transition-colors",
-                  highlightWholeWord ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item font-mono",
+                  highlightWholeWord && "seg-sm-item-active"
                 )}
               >[W]</button>
             </div>
@@ -4282,22 +4278,22 @@ export function LogsExplorer({
                       const n = parseInt(e.target.value, 10);
                       if (!isNaN(n) && n >= 1 && n <= matchRows.length) navigateToMatch(n - 1);
                     }}
-                    className="w-12 text-center text-[11px] rounded border border-slate-300 px-1 py-0.5 font-mono focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className="w-12 text-center text-[11px] rounded border border-slate-300 px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-sky-400 focus:border-sky-400 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
                   />
                   <span>/ {matchIndices.length}</span>
                 </div>
-                <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+                <div className="seg-sm">
                   <button
                     type="button"
                     title="Previous match (Shift+Enter)"
                     onClick={goPrevMatch}
-                    className="px-2 py-0.5 text-[11px] font-medium bg-white text-slate-500 hover:bg-slate-50 transition-colors"
+                    className="seg-sm-item"
                   >↑ Prev</button>
                   <button
                     type="button"
                     title="Next match (Enter)"
                     onClick={goNextMatch}
-                    className="px-2 py-0.5 text-[11px] font-medium bg-white text-slate-500 hover:bg-slate-50 border-l border-slate-300 hover:bg-slate-50 transition-colors"
+                    className="seg-sm-item"
                   >↓ Next</button>
                 </div>
               </>
@@ -4307,13 +4303,13 @@ export function LogsExplorer({
           {/* Row 3: view toggles + count + height controls + fullscreen */}
           <div className="flex items-center gap-3 px-4 py-2 border-t border-slate-100">
             {/* Terminal / Table / JSON toggle — available in all modes */}
-            <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+            <div className="seg-sm">
               <button
                 type="button"
                 onClick={() => setViewMode("terminal")}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium transition-colors",
-                  viewMode === "terminal" ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item",
+                  viewMode === "terminal" && "seg-sm-item-active"
                 )}
               >
                 Terminal
@@ -4330,8 +4326,8 @@ export function LogsExplorer({
                   }
                 }}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium border-l border-slate-300 transition-colors",
-                  viewMode === "table" ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item",
+                  viewMode === "table" && "seg-sm-item-active"
                 )}
               >
                 Table
@@ -4340,8 +4336,8 @@ export function LogsExplorer({
                 type="button"
                 onClick={() => setViewMode("json")}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium border-l border-slate-300 transition-colors",
-                  viewMode === "json" ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                  "seg-sm-item",
+                  viewMode === "json" && "seg-sm-item-active"
                 )}
                 title="Show all entries as one JSON document"
               >
@@ -4355,10 +4351,8 @@ export function LogsExplorer({
                 onClick={() => setWrapLines((w) => !w)}
                 title={wrapLines ? "Disable line wrap" : "Wrap long lines"}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium rounded border transition-colors shrink-0",
-                  wrapLines
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-white text-slate-500 border-slate-300 hover:bg-slate-50"
+                  "toggle-chip",
+                  wrapLines && "toggle-chip-on"
                 )}
               >
                 Wrap
@@ -4371,10 +4365,8 @@ export function LogsExplorer({
                 onClick={() => setAutoScroll((v) => !v)}
                 title={autoScroll ? "Pause auto-scroll (stay at current position)" : "Resume auto-scroll to latest entries"}
                 className={cn(
-                  "px-2 py-0.5 text-[11px] font-medium rounded border transition-colors shrink-0",
-                  autoScroll
-                    ? "bg-slate-900 text-white border-slate-900"
-                    : "bg-white text-slate-500 border-slate-300 hover:bg-slate-50"
+                  "toggle-chip",
+                  autoScroll && "toggle-chip-on"
                 )}
               >
                 Auto-scroll
@@ -4385,10 +4377,8 @@ export function LogsExplorer({
               onClick={() => setDedupe((v) => !v)}
               title={dedupe ? "Show all entries" : "Collapse exact-match duplicates"}
               className={cn(
-                "px-2 py-0.5 text-[11px] font-medium rounded border transition-colors shrink-0",
-                dedupe
-                  ? "bg-slate-900 text-white border-slate-900"
-                  : "bg-white text-slate-500 border-slate-300 hover:bg-slate-50"
+                "toggle-chip",
+                dedupe && "toggle-chip-on"
               )}
             >
               Dedupe
@@ -4407,7 +4397,7 @@ export function LogsExplorer({
                   ? "Select a log entry first to enable this"
                   : "Scroll the highlighted entry back into view"
               }
-              className="ml-auto px-2 py-0.5 text-[11px] font-medium rounded border border-slate-300 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+              className="ml-auto toggle-chip transition-colors shrink-0"
             >
               Scroll to selected
             </button>
@@ -4426,7 +4416,7 @@ export function LogsExplorer({
                     ? "Select a log entry first to enable this"
                     : "Open ±5 seconds of context around the selected entry in a new tab"
                 }
-                className="px-2 py-0.5 text-[11px] font-medium rounded border border-slate-300 bg-white text-slate-500 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shrink-0"
+                className="toggle-chip transition-colors shrink-0"
               >
                 Context ±5s
               </button>
@@ -4434,7 +4424,7 @@ export function LogsExplorer({
             {/* Bulk expand / collapse — meaningful when rows are line-clamped
                 (terminal + wrap) or when expanding payloads in the table view. */}
             {((viewMode === "terminal" && wrapLines) || viewMode === "table") && filtered.length > 0 && (
-              <div className="flex rounded border border-slate-300 overflow-hidden shrink-0">
+              <div className="seg-sm">
                 <button
                   type="button"
                   title="Expand all entries"
@@ -4447,7 +4437,7 @@ export function LogsExplorer({
                       setExpandCmd({ kind: "all", nonce: Date.now() });
                     }
                   }}
-                  className="px-2 py-0.5 text-[11px] font-medium bg-white text-slate-500 hover:bg-slate-50 transition-colors"
+                  className="seg-sm-item"
                 >
                   Expand all
                 </button>
@@ -4461,7 +4451,7 @@ export function LogsExplorer({
                       setExpandCmd({ kind: "none", nonce: Date.now() });
                     }
                   }}
-                  className="px-2 py-0.5 text-[11px] font-medium bg-white text-slate-500 hover:bg-slate-50 border-l border-slate-300 transition-colors"
+                  className="seg-sm-item"
                 >
                   Collapse all
                 </button>
@@ -4637,13 +4627,13 @@ export function LogsExplorer({
           {viewMode === "terminal" ? (
             !fetched && !tailing ? (
               <div className="flex items-center justify-center h-full min-h-[160px]">
-                <p className="text-sm text-slate-400 font-mono">
+                <p className="text-sm text-slate-400">
                   {anchorTimestamp ? "Loading context…" : "Select sources and start tailing or run a search"}
                 </p>
               </div>
             ) : deferredIsActive && filtered.length === 0 && fetched && !searching ? (
               <div className="flex items-center justify-center h-full min-h-[160px]">
-                <p className="text-sm text-slate-400 font-mono">
+                <p className="text-sm text-slate-400">
                   {entries.length === 0 ? "No log entries returned." : "No entries match the filter."}
                 </p>
               </div>
@@ -4890,7 +4880,7 @@ export function LogsExplorer({
                   </svg>
                   <span>
                     Hit a 429 from AIC — per-page delay auto-raised to{" "}
-                    <span className="font-mono font-semibold">{rateLimitDelayMs} ms</span>
+                    <span className="font-semibold">{rateLimitDelayMs} ms</span>
                     . You can override the value in the Delay box.
                   </span>
                 </div>
@@ -4954,7 +4944,7 @@ export function LogsExplorer({
                         setRateLimitDelayMs(clamped);
                         workerRef.current?.postMessage({ type: "set-rate-limit-delay", value: clamped, reason: "user" });
                       }}
-                      className="w-16 text-[11px] font-mono px-1 py-0 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-sky-500 bg-white"
+                      className="w-16 text-[11px] px-1 py-0 border border-slate-200 rounded focus:outline-none focus:ring-1 focus:ring-sky-500 bg-white"
                     />
                     <span className="text-slate-400">ms</span>
                   </label>
@@ -5023,7 +5013,7 @@ export function LogsExplorer({
           <div className="flex items-center justify-between px-4 py-2 border-t border-slate-200 bg-slate-50 shrink-0">
             <div className="flex items-center gap-2">
               <span className="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span className="text-xs text-slate-600 font-mono">
+              <span className="text-xs text-slate-600">
                 {loading
                   ? `Fetching…`
                   : lastUpdated
@@ -5031,7 +5021,7 @@ export function LogsExplorer({
                     : `Starting…`}
               </span>
               {tailTotalReceived > 0 && (
-                <span className="text-xs text-slate-400 font-mono">
+                <span className="text-xs text-slate-400">
                   · {tailTotalReceived.toLocaleString()} total
                   {tailDropped > 0 && ` · ${entries.length.toLocaleString()} in buffer`}
                 </span>

@@ -172,10 +172,10 @@ function highlightLine(raw: string): string {
   return escapeHtml(raw).replace(
     /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
     (match) => {
-      let color = "#60a5fa";
-      if (/^"/.test(match)) color = /:$/.test(match) ? "#94a3b8" : "#86efac";
-      else if (/true|false/.test(match)) color = "#fbbf24";
-      else if (/null/.test(match)) color = "#f87171";
+      let color = "var(--color-blue-400)";
+      if (/^"/.test(match)) color = /:$/.test(match) ? "var(--color-slate-400)" : "var(--color-green-300)";
+      else if (/true|false/.test(match)) color = "var(--color-amber-400)";
+      else if (/null/.test(match)) color = "var(--color-red-400)";
       return `<span style="color:${color}">${match}</span>`;
     }
   );
@@ -231,7 +231,7 @@ function DiffViewer({ lines, fullscreen, wrap }: { lines: DiffLine[]; fullscreen
   let lineIdx = 0;
 
   return (
-    <div className={cn("flex bg-slate-950 overflow-hidden", fullscreen ? "flex-1 min-h-0" : "max-h-[600px]")}>
+    <div className={cn("flex bg-slate-950 code-surface overflow-hidden", fullscreen ? "flex-1 min-h-0" : "max-h-[600px]")}>
       <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-auto text-[11px] font-mono leading-5">
         <table className="min-w-full border-collapse">
           <tbody>
@@ -240,7 +240,7 @@ function DiffViewer({ lines, fullscreen, wrap }: { lines: DiffLine[]; fullscreen
                 const si = item.startIdx;
                 lineIdx += item.count;
                 return (
-                  <tr key={`e-${hi}`} className="bg-slate-900">
+                  <tr key={`e-${hi}`} className="bg-slate-900 code-surface">
                     <td colSpan={4} className="py-0.5 px-3 text-center">
                       <button
                         onClick={() => setExpanded((prev) => { const s = new Set(prev); s.has(si) ? s.delete(si) : s.add(si); return s; })}
@@ -408,7 +408,7 @@ function SideBySideViewer({
 
   return (
     <div className={cn(
-      "flex divide-x divide-slate-700 bg-slate-950 overflow-hidden",
+      "flex divide-x divide-slate-700 bg-slate-950 code-surface overflow-hidden",
       fullscreen ? "flex-1 min-h-0" : "h-[600px]"
     )}>
       <FilePane
@@ -451,8 +451,8 @@ const PANE_STYLES: Record<DiffMode, PaneStyle> = {
   compare: {
     bg: {
       context: { left: "", right: "" },
-      leftOnly: { left: "bg-red-950", right: "bg-slate-900" },
-      rightOnly: { left: "bg-slate-900", right: "bg-emerald-950" },
+      leftOnly: { left: "bg-red-950", right: "bg-slate-900 code-surface" },
+      rightOnly: { left: "bg-slate-900 code-surface", right: "bg-emerald-950" },
       changed: { left: "bg-red-950", right: "bg-emerald-950" },
     },
     text: {
@@ -466,8 +466,8 @@ const PANE_STYLES: Record<DiffMode, PaneStyle> = {
   "dry-run": {
     bg: {
       context: { left: "", right: "" },
-      leftOnly: { left: "bg-emerald-950", right: "bg-slate-900" },
-      rightOnly: { left: "bg-slate-900", right: "bg-red-950" },
+      leftOnly: { left: "bg-emerald-950", right: "bg-slate-900 code-surface" },
+      rightOnly: { left: "bg-slate-900 code-surface", right: "bg-red-950" },
       changed: { left: "bg-emerald-950", right: "bg-red-950" },
     },
     text: {
@@ -495,7 +495,7 @@ function FilePane({
   const style = PANE_STYLES[mode];
   return (
     <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-      <div className="px-3 py-1.5 bg-slate-800 border-b border-slate-700 shrink-0">
+      <div className="px-3 py-1.5 bg-slate-800 code-surface border-b border-slate-700 shrink-0">
         <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide">{label}</span>
       </div>
       {rows ? (
@@ -670,9 +670,9 @@ function FileRow({ file, sourceLabel, targetLabel, extraActions, checked, onTogg
 
   if (fullscreen && open) {
     return (
-      <div className="fixed inset-0 z-50 bg-slate-950 flex flex-col">
+      <div className="fixed inset-0 z-50 bg-slate-950 code-surface flex flex-col">
         {/* Fullscreen header */}
-        <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 border-b border-slate-800 shrink-0">
+        <div className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 code-surface border-b border-slate-800 shrink-0">
           <span className={cn("inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold shrink-0", s.badge)}>
             {s.icon}
           </span>
@@ -830,8 +830,8 @@ function FileRow({ file, sourceLabel, targetLabel, extraActions, checked, onTogg
               onClick={() => setWrap((w) => !w)}
               title="Toggle line wrap"
               className={cn(
-                "px-2 py-0.5 text-[10px] rounded border transition-colors",
-                wrap ? "bg-slate-900 text-white border-slate-900" : "text-slate-500 border-slate-300 hover:bg-slate-100"
+                "toggle-chip",
+                wrap && "toggle-chip-on"
               )}
             >
               Wrap
@@ -841,8 +841,8 @@ function FileRow({ file, sourceLabel, targetLabel, extraActions, checked, onTogg
               onClick={() => setFormat((f) => !f)}
               title="Auto-format content (JSON / JS / Groovy)"
               className={cn(
-                "px-2 py-0.5 text-[10px] rounded border transition-colors",
-                format ? "bg-slate-900 text-white border-slate-900" : "text-slate-500 border-slate-300 hover:bg-slate-100"
+                "toggle-chip",
+                format && "toggle-chip-on"
               )}
             >
               Format
@@ -1702,7 +1702,7 @@ function JourneyTreeSection({ tree, forceOpen: parentForceOpen, forceSeq: parent
         onClick={() => setOpen((o) => !o)}
       >
         <span className="text-sm font-semibold text-slate-700 flex-1">Journeys</span>
-        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">
           {totalChanged} changed
         </span>
         <span className="text-[10px] text-slate-400">{tree.length} entry journeys</span>
@@ -1717,7 +1717,7 @@ function JourneyTreeSection({ tree, forceOpen: parentForceOpen, forceSeq: parent
             <button type="button" onClick={collapseAll} className="text-[10px] text-slate-500 hover:text-slate-700 transition-colors shrink-0">Collapse All</button>
             <span className="text-slate-300 shrink-0">|</span>
             {/* Status filter pills */}
-            <div className="flex rounded border border-slate-300 overflow-hidden text-[10px] shrink-0">
+            <div className="seg-sm">
               {([
                 { value: "all" as JourneyStatusFilter, label: "All" },
                 { value: "modified" as JourneyStatusFilter, label: `Modified (${counts.modified})` },
@@ -1729,10 +1729,8 @@ function JourneyTreeSection({ tree, forceOpen: parentForceOpen, forceSeq: parent
                   type="button"
                   onClick={() => { setStatusFilter(f.value); setPage(0); }}
                   className={cn(
-                    "px-2 py-0.5 transition-colors",
-                    statusFilter === f.value
-                      ? "bg-slate-900 text-white"
-                      : "bg-white text-slate-500 hover:bg-slate-50"
+                    "seg-sm-item",
+                    statusFilter === f.value && "seg-sm-item-active"
                   )}
                 >
                   {f.label}
@@ -1746,7 +1744,7 @@ function JourneyTreeSection({ tree, forceOpen: parentForceOpen, forceSeq: parent
               value={searchQ}
               onChange={(e) => { setSearchQ(e.target.value); setPage(0); }}
               placeholder="Search journeys…"
-              className="flex-1 text-xs rounded border border-slate-200 px-2.5 py-1 font-mono focus:outline-none focus:ring-1 focus:ring-sky-400"
+              className="flex-1 text-xs rounded border border-slate-200 px-2.5 py-1 focus:outline-none focus:ring-1 focus:ring-sky-400"
             />
             {searchQ && (
               <button type="button" onClick={() => setSearchQ("")} className="text-xs text-slate-400 hover:text-slate-600">
@@ -1854,7 +1852,7 @@ function FilePreviewModal({ env, path, line, onClose }: { env: string; path: str
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
       <div
-        className="bg-slate-900 border border-slate-700 rounded-lg shadow-2xl w-[min(1100px,calc(100vw-40px))] h-[min(800px,calc(100vh-40px))] flex flex-col overflow-hidden"
+        className="bg-slate-900 code-surface border border-slate-700 rounded-lg shadow-2xl w-[min(1100px,calc(100vw-40px))] h-[min(800px,calc(100vh-40px))] flex flex-col overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 px-4 py-2 border-b border-slate-700 bg-slate-800 shrink-0">
@@ -2255,7 +2253,7 @@ function WorkflowGroupRow({
         </svg>
         <span className="text-xs font-medium text-slate-700 flex-1 truncate">{workflowName}</span>
         {/* Diff badges */}
-        <div className="flex items-center gap-1 text-[9px] font-mono shrink-0">
+        <div className="flex items-center gap-1 text-[9px] shrink-0">
           {modified > 0 && <span className="px-1 py-0.5 rounded bg-amber-100 text-amber-700">{modified} modified</span>}
           {added > 0 && <span className="px-1 py-0.5 rounded bg-emerald-100 text-emerald-700">{added} added</span>}
           {removed > 0 && <span className="px-1 py-0.5 rounded bg-red-100 text-red-700">{removed} removed</span>}
@@ -2322,7 +2320,7 @@ function AllFilesModalScopeSection({
         onClick={() => setOpen((o) => !o)}
       >
         <span className="text-sm font-semibold text-slate-700 flex-1">{group.label}</span>
-        <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
+        <div className="flex items-center gap-2 text-[10px] shrink-0">
           <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500">{group.itemCount} total</span>
           {group.itemModified > 0 && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">{group.itemModified} modified</span>}
           {group.itemAdded > 0 && <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">{group.itemAdded} added</span>}
@@ -2335,7 +2333,7 @@ function AllFilesModalScopeSection({
       {open && (
         <div className="bg-white">
           <div className="px-3 pt-3 pb-2 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-            <div className="flex rounded border border-slate-300 overflow-hidden text-[10px] shrink-0">
+            <div className="seg-sm">
               {([
                 { value: "all" as const, label: `All (${group.files.length})` },
                 { value: "modified" as const, label: `Modified (${group.modified})` },
@@ -2348,8 +2346,8 @@ function AllFilesModalScopeSection({
                   type="button"
                   onClick={() => { setStatusFilter(f.value); setPage(0); }}
                   className={cn(
-                    "px-2 py-0.5 transition-colors",
-                    statusFilter === f.value ? "bg-slate-900 text-white" : "bg-white text-slate-500 hover:bg-slate-50"
+                    "seg-sm-item",
+                    statusFilter === f.value && "seg-sm-item-active"
                   )}
                 >
                   {f.label}
@@ -2430,7 +2428,7 @@ function AllFilesModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden" style={{ width: "90vw", maxWidth: 1200, height: "90vh" }}>
+      <div className="bg-tile rounded-[18px] ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)] flex flex-col overflow-hidden" style={{ width: "90vw", maxWidth: 1200, height: "90vh" }}>
         {/* Header */}
         <div className="flex items-center gap-3 px-5 py-3 border-b border-slate-200 bg-slate-50 shrink-0">
           <div className="flex-1 min-w-0">
@@ -2572,9 +2570,9 @@ function TaskItemsDrawer({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-900/40" onClick={onClose}>
+    <div className="fixed inset-0 z-50 bg-overlay" onClick={onClose}>
       <aside
-        className="fixed right-0 top-0 h-full w-[min(640px,100vw)] bg-white shadow-2xl flex flex-col"
+        className="fixed right-0 top-0 h-full w-[min(640px,100vw)] bg-tile border-l border-line-2 shadow-[var(--popover-shadow)] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -2936,7 +2934,7 @@ function ScopeSection({
       >
         <span className={cn("text-sm font-semibold flex-1", hasChanges ? "text-slate-700" : "text-slate-400")}>{group.label}</span>
 
-        <div className="flex items-center gap-2 text-[10px] font-mono shrink-0">
+        <div className="flex items-center gap-2 text-[10px] shrink-0">
           {group.itemModified > 0 && (
             <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">{group.itemModified} modified</span>
           )}
@@ -2965,7 +2963,7 @@ function ScopeSection({
               {/* Row 1: status pills + optional type filter */}
               <div className="flex items-center gap-2 flex-wrap">
                 {/* Status filter pills */}
-                <div className="flex rounded border border-slate-300 overflow-hidden text-[10px] shrink-0">
+                <div className="seg-sm">
                   {([
                     { value: "all" as const, label: `All (${hideUnchanged ? totalChanged : group.files.length})` },
                     { value: "modified" as const, label: `Modified (${group.modified})` },
@@ -2977,10 +2975,8 @@ function ScopeSection({
                       type="button"
                       onClick={() => { setStatusFilter(f.value); setPage(0); }}
                       className={cn(
-                        "px-2 py-0.5 transition-colors",
-                        statusFilter === f.value
-                          ? "bg-slate-900 text-white"
-                          : "bg-white text-slate-500 hover:bg-slate-50"
+                        "seg-sm-item",
+                        statusFilter === f.value && "seg-sm-item-active"
                       )}
                     >
                       {f.label}
@@ -3022,7 +3018,7 @@ function ScopeSection({
                                 className="accent-indigo-600 w-3 h-3"
                               />
                               <span className="flex-1 text-slate-700 truncate">{t.label}</span>
-                              <span className="text-[10px] text-slate-400 font-mono shrink-0">{t.count}</span>
+                              <span className="text-[10px] text-slate-400 shrink-0">{t.count}</span>
                             </label>
                           );
                         })}
@@ -3359,9 +3355,9 @@ export function DiffReport({ report, tasks = [], mode = "compare", dryRunMode, s
         <div className="px-5 py-4 border-b border-slate-100 space-y-3">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-800">
-              <span className="font-mono">{sourceLabel}</span>
+              <span className="">{sourceLabel}</span>
               <span className="mx-1.5 text-slate-400">→</span>
-              <span className="font-mono">{targetLabel}</span>
+              <span className="">{targetLabel}</span>
             </h2>
             <span className="text-xs text-slate-400">{new Date(report.generatedAt).toLocaleString()}</span>
           </div>

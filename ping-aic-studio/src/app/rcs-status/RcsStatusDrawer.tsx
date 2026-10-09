@@ -73,11 +73,11 @@ export function RcsStatusDrawer({ open, onClose, env, cluster, status, checkedAt
   return (
     <Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50" />
+        <Dialog.Overlay className="fixed inset-0 bg-overlay backdrop-blur-sm z-50" />
         <Dialog.Content className="fixed right-0 top-0 bottom-0 w-full max-w-xl bg-white z-50 shadow-2xl flex flex-col">
           <div className="px-5 py-4 border-b border-slate-200 flex items-center justify-between">
             <div>
-              <Dialog.Title className="text-sm font-semibold text-slate-700 font-mono">
+              <Dialog.Title className="text-sm font-semibold text-slate-700">
                 {cluster?.name ?? ""}
               </Dialog.Title>
               <div className="text-xs text-slate-400 mt-0.5">

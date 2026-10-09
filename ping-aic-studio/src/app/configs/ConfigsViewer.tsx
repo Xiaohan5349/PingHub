@@ -556,7 +556,7 @@ function TreeView({ environment }: { environment: string }) {
 
       {/* Right panel */}
       <div className={cn(
-        "flex flex-col bg-slate-900 overflow-hidden",
+        "flex flex-col bg-slate-900 code-surface overflow-hidden",
         fullscreen ? "fixed inset-0 z-50 rounded-none border-0" : "flex-1 rounded-lg border border-slate-200"
       )}>
         {selectedFile ? (
@@ -1555,7 +1555,7 @@ function SectionsView({
       <div className={cn(
         "flex flex-col overflow-hidden min-w-0",
         fullscreen ? "fixed inset-0 z-50" : "flex-1",
-        selectedItem && (selectedScope === "journeys" || selectedScope === "iga-workflows") ? "bg-slate-50" : "bg-slate-900"
+        selectedItem && (selectedScope === "journeys" || selectedScope === "iga-workflows") ? "bg-slate-50" : "bg-slate-900 code-surface"
       )}>
         {selectedItem ? (
           <>
@@ -2098,24 +2098,18 @@ export function ConfigsViewer({ environments }: { environments: Environment[] })
         </select>
 
         {/* View toggle */}
-        <div className="flex rounded-md border border-slate-200 overflow-hidden text-xs font-medium">
+        <div className="seg">
           <button
             type="button"
             onClick={() => setView("sections")}
-            className={cn(
-              "px-3 py-1.5 transition-colors",
-              view === "sections" ? "bg-slate-800 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
-            )}
+            className={cn("seg-item", view === "sections" && "seg-item-active")}
           >
             Sections
           </button>
           <button
             type="button"
             onClick={() => setView("tree")}
-            className={cn(
-              "px-3 py-1.5 border-l border-slate-200 transition-colors",
-              view === "tree" ? "bg-slate-800 text-white" : "bg-white text-slate-600 hover:bg-slate-50"
-            )}
+            className={cn("seg-item", view === "tree" && "seg-item-active")}
           >
             Tree
           </button>

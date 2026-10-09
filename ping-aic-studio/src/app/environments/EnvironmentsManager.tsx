@@ -725,9 +725,9 @@ export function EnvironmentsManager({
       {/* Edit dialog */}
       <Dialog.Root open={editing !== null} onOpenChange={(open) => { if (!open) openEditor(null); }}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in" />
+          <Dialog.Overlay className="fixed inset-0 bg-overlay backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=open]:fade-in" />
           <Dialog.Content
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(900px,calc(100vw-32px))] max-h-[calc(100vh-48px)] overflow-y-auto bg-white rounded-2xl shadow-2xl"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[min(900px,calc(100vw-32px))] max-h-[calc(100vh-48px)] overflow-y-auto bg-tile rounded-[18px] ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)]"
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
               <div className="flex items-center gap-3 min-w-0">
@@ -842,19 +842,19 @@ function ReleaseStrip({
     urgency === "overdue" ? (
       <span className="text-rose-600 font-medium" title={nextUpgrade ?? undefined}>
         overdue{days !== null ? ` by ${Math.abs(days)}d` : ""}
-        {plannedDate && <span className="ml-1 font-normal opacity-75">(planned {plannedDate})</span>}
+        {plannedDate && <span className="ml-1 font-normal text-ink-3">(planned {plannedDate})</span>}
       </span>
     )
       : urgency === "soon" ? (
         <span className="text-amber-700 font-medium" title={nextUpgrade ?? undefined}>
           upgrade in {days}d
-          {plannedDate && <span className="ml-1 font-normal opacity-75">({plannedDate})</span>}
+          {plannedDate && <span className="ml-1 font-normal text-ink-3">({plannedDate})</span>}
         </span>
       )
         : urgency === "later" ? (
           <span className="text-slate-500" title={nextUpgrade ?? undefined}>
             upgrade in {days}d
-            {plannedDate && <span className="ml-1 opacity-75">({plannedDate})</span>}
+            {plannedDate && <span className="ml-1 text-ink-3">({plannedDate})</span>}
           </span>
         )
           : <span className="text-slate-400">no upgrade scheduled</span>;

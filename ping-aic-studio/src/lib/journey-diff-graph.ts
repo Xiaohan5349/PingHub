@@ -63,12 +63,12 @@ function parseJson(content: string): JourneyJson | null {
 // ── Edge styling helpers ──────────────────────────────────────────────────────
 
 function edgeColor(status: DiffStatus, targetId: string): string {
-  if (status === "added")    return "#10b981";
-  if (status === "removed")  return "#ef4444";
-  if (status === "modified") return "#f59e0b";
-  if (targetId === DIFF_FAILURE_ID) return "#f87171";
-  if (targetId === DIFF_SUCCESS_ID) return "#34d399";
-  return "#64748b";
+  if (status === "added")    return "var(--color-emerald-500)";
+  if (status === "removed")  return "var(--color-red-500)";
+  if (status === "modified") return "var(--color-amber-500)";
+  if (targetId === DIFF_FAILURE_ID) return "var(--color-red-400)";
+  if (targetId === DIFF_SUCCESS_ID) return "var(--color-emerald-400)";
+  return "var(--color-slate-500)";
 }
 
 type SvgStyle = Record<string, string | number>;
@@ -263,8 +263,8 @@ export function parseMergedDiffGraph(
         label: outcome === "outcome" ? undefined : outcome,
 
         style: makeEdgeStyle(edgeStatus, targetId),
-        labelStyle: { fontSize: 9, fill: "#64748b" },
-        labelBgStyle: { fill: "#f8fafc", fillOpacity: 0.9 },
+        labelStyle: { fontSize: 9, fill: "var(--color-slate-500)" },
+        labelBgStyle: { fill: "var(--color-slate-50)", fillOpacity: 0.9 },
         labelBgPadding: [3, 5] as [number, number],
         labelBgBorderRadius: 3,
         data: { diffStatus: edgeStatus },
@@ -386,8 +386,8 @@ export function parseSingleSideGraph(
         label: outcome === "outcome" ? undefined : outcome,
 
         style: makeEdgeStyle("unchanged", targetId),
-        labelStyle: { fontSize: 9, fill: "#64748b" },
-        labelBgStyle: { fill: "#f8fafc", fillOpacity: 0.9 },
+        labelStyle: { fontSize: 9, fill: "var(--color-slate-500)" },
+        labelBgStyle: { fill: "var(--color-slate-50)", fillOpacity: 0.9 },
         labelBgPadding: [3, 5] as [number, number],
         labelBgBorderRadius: 3,
         data: { diffStatus: "unchanged" as DiffStatus },

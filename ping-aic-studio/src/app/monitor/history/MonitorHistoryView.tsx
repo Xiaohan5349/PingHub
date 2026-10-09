@@ -66,19 +66,19 @@ const RANGES: { label: string; hours: number }[] = [
 function statusToColor(status: MonitorStatus | TlsStatus | "empty"): string {
     switch (status) {
         case "ok":
-            return "#10b981"; // emerald-500
+            return "var(--color-emerald-500)"; // emerald-500
         case "degraded":
         case "warning":
-            return "#f59e0b"; // amber-500
+            return "var(--color-amber-500)"; // amber-500
         case "down":
         case "expired":
         case "error":
-            return "#ef4444"; // red-500
+            return "var(--color-red-500)"; // red-500
         case "unknown":
-            return "#94a3b8"; // slate-400
+            return "var(--color-slate-400)"; // slate-400
         case "empty":
         default:
-            return "#e2e8f0"; // slate-200
+            return "var(--color-slate-200)"; // slate-200
     }
 }
 
@@ -226,40 +226,30 @@ export function MonitorHistoryView() {
     return (
         <div className="space-y-4">
             <div className="flex items-center gap-3 flex-wrap">
-                <div className="inline-flex rounded-md border border-slate-300 overflow-hidden">
+                <div className="seg">
                     <button
                         type="button"
                         onClick={() => handleKindChange("server")}
-                        className={`px-3 py-1.5 text-sm ${kind === "server"
-                                ? "bg-indigo-600 text-white"
-                                : "bg-white text-slate-700 hover:bg-slate-100"
-                            }`}
+                        className={`seg-item ${kind === "server" ? "seg-item-active" : ""}`}
                     >
                         Server Status
                     </button>
                     <button
                         type="button"
                         onClick={() => handleKindChange("tls")}
-                        className={`px-3 py-1.5 text-sm border-l border-slate-300 ${kind === "tls"
-                                ? "bg-indigo-600 text-white"
-                                : "bg-white text-slate-700 hover:bg-slate-100"
-                            }`}
+                        className={`seg-item ${kind === "tls" ? "seg-item-active" : ""}`}
                     >
                         TLS Expiration
                     </button>
                 </div>
 
-                <div className="inline-flex rounded-md border border-slate-300 overflow-hidden">
-                    {RANGES.map((r, i) => (
+                <div className="seg">
+                    {RANGES.map((r) => (
                         <button
                             key={r.label}
                             type="button"
                             onClick={() => setHours(r.hours)}
-                            className={`px-3 py-1.5 text-sm ${i > 0 ? "border-l border-slate-300" : ""
-                                } ${hours === r.hours
-                                    ? "bg-slate-800 text-white"
-                                    : "bg-white text-slate-700 hover:bg-slate-100"
-                                }`}
+                            className={`seg-item ${hours === r.hours ? "seg-item-active" : ""}`}
                         >
                             {r.label}
                         </button>
@@ -561,25 +551,25 @@ function DetailPanel(props: {
                 ) : (
                     <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
-                            <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" />
+                            <CartesianGrid stroke="var(--color-slate-200)" strokeDasharray="3 3" />
                             <XAxis
                                 dataKey="ts"
                                 tickFormatter={(v: number) => formatTick(v, hours)}
-                                tick={{ fontSize: 11, fill: "#64748b" }}
-                                stroke="#cbd5e1"
+                                tick={{ fontSize: 11, fill: "var(--color-slate-500)" }}
+                                stroke="var(--color-slate-300)"
                                 domain={["dataMin", "dataMax"]}
                                 type="number"
                             />
                             <YAxis
-                                tick={{ fontSize: 11, fill: "#64748b" }}
-                                stroke="#cbd5e1"
+                                tick={{ fontSize: 11, fill: "var(--color-slate-500)" }}
+                                stroke="var(--color-slate-300)"
                                 width={40}
                                 label={{
                                     value: kind === "server" ? "ms" : "days",
                                     angle: -90,
                                     position: "insideLeft",
                                     offset: 10,
-                                    style: { fontSize: 11, fill: "#64748b" },
+                                    style: { fontSize: 11, fill: "var(--color-slate-500)" },
                                 }}
                             />
                             <Tooltip
@@ -591,7 +581,7 @@ function DetailPanel(props: {
                                     <Line
                                         type="monotone"
                                         dataKey="p50"
-                                        stroke="#10b981"
+                                        stroke="var(--color-emerald-500)"
                                         strokeWidth={1.5}
                                         dot={false}
                                         connectNulls
@@ -600,7 +590,7 @@ function DetailPanel(props: {
                                     <Line
                                         type="monotone"
                                         dataKey="p95"
-                                        stroke="#f59e0b"
+                                        stroke="var(--color-amber-500)"
                                         strokeWidth={1.5}
                                         dot={false}
                                         connectNulls
@@ -611,7 +601,7 @@ function DetailPanel(props: {
                                 <Line
                                     type="monotone"
                                     dataKey="daysRemaining"
-                                    stroke="#6366f1"
+                                    stroke="var(--color-indigo-500)"
                                     strokeWidth={1.5}
                                     dot={false}
                                     connectNulls

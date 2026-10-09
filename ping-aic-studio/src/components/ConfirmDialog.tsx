@@ -128,9 +128,9 @@ export function DialogProvider({ children }: { children: React.ReactNode }) {
       {children}
       <Dialog.Root open={open} onOpenChange={(v) => { if (!v) handleCancel(); }}>
         <Dialog.Portal>
-          <Dialog.Overlay className="fixed inset-0 bg-slate-900/55 backdrop-blur-sm z-[100] data-[state=open]:animate-in data-[state=open]:fade-in" />
+          <Dialog.Overlay className="fixed inset-0 bg-overlay backdrop-blur-sm z-[100] data-[state=open]:animate-in data-[state=open]:fade-in" />
           <Dialog.Content
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-[min(460px,calc(100vw-32px))] bg-white rounded-2xl shadow-2xl overflow-hidden"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-[100] w-[min(460px,calc(100vw-32px))] bg-tile rounded-[18px] ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)] overflow-hidden"
             onOpenAutoFocus={(e) => {
               if (state?.kind !== "prompt") e.preventDefault();
             }}

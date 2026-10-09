@@ -67,7 +67,7 @@ function StartNode() {
     <div className="rounded-full bg-emerald-500 border-2 border-emerald-600 flex items-center justify-center shadow"
       style={{ width: CIRCLE_SZ, height: CIRCLE_SZ }}>
       <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-      <Handle type="source" position={Position.Right} style={{ background: "#10b981" }} />
+      <Handle type="source" position={Position.Right} style={{ background: "var(--color-emerald-500)" }} />
     </div>
   );
 }
@@ -77,7 +77,7 @@ function EndNode() {
     <div className="rounded-full bg-slate-600 border-2 border-slate-700 flex items-center justify-center shadow"
       style={{ width: CIRCLE_SZ, height: CIRCLE_SZ }}>
       <div className="w-4 h-4 rounded-full border-2 border-slate-300" />
-      <Handle type="target" position={Position.Left} style={{ background: "#475569" }} />
+      <Handle type="target" position={Position.Left} style={{ background: "var(--color-slate-600)" }} />
     </div>
   );
 }
@@ -93,7 +93,7 @@ function StepNode({ data }: NodeProps) {
         d.isSearchMatch && "ring-2 ring-amber-400 ring-offset-1")}
       style={{ width: NODE_W, height: NODE_H }}
     >
-      <Handle type="target" position={Position.Left}  style={{ background: "#94a3b8" }} />
+      <Handle type="target" position={Position.Left}  style={{ background: "var(--color-slate-400)" }} />
       <div className="px-2.5 py-2 h-full flex flex-col justify-between">
         <div className="flex items-start gap-1.5">
           {KIND_ICON[d.kind]}
@@ -101,7 +101,7 @@ function StepNode({ data }: NodeProps) {
         </div>
         <span className={cn("self-start text-[9px] font-bold px-1 rounded", styles.badge)}>{styles.label}</span>
       </div>
-      <Handle type="source" position={Position.Right} style={{ background: "#94a3b8" }} />
+      <Handle type="source" position={Position.Right} style={{ background: "var(--color-slate-400)" }} />
     </div>
   );
 }
@@ -132,7 +132,7 @@ function buildGraph(workflow: WorkflowData): { nodes: Node[]; edges: Edge[] } {
   if (workflow.startConnection) {
     edges.push({
       id: `start->${workflow.startConnection}`, source: "startNode", target: workflow.startConnection,
-      markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" }, style: { stroke: "#94a3b8" },
+      markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-slate-400)" }, style: { stroke: "var(--color-slate-400)" },
     });
   }
 
@@ -143,11 +143,11 @@ function buildGraph(workflow: WorkflowData): { nodes: Node[]; edges: Edge[] } {
       edges.push({
         id: `${step.id}->${target}::${ns.outcome}`,
         source: step.id, target, label,
-        labelStyle:     { fontSize: 9, fill: "#64748b" },
+        labelStyle:     { fontSize: 9, fill: "var(--color-slate-500)" },
         labelBgStyle:   { fill: "rgba(255,255,255,0.9)", fillOpacity: 1 },
         labelBgPadding: [3, 2] as [number, number],
-        markerEnd: { type: MarkerType.ArrowClosed, color: "#94a3b8" },
-        style:     { stroke: "#94a3b8", strokeWidth: 1.5 },
+        markerEnd: { type: MarkerType.ArrowClosed, color: "var(--color-slate-400)" },
+        style:     { stroke: "var(--color-slate-400)", strokeWidth: 1.5 },
       });
     }
   }
@@ -404,7 +404,7 @@ function StepDrawer({
                           </svg>
                         </button>
                       </div>
-                      <div className="flex-1 overflow-auto bg-slate-950">
+                      <div className="flex-1 overflow-auto bg-slate-950 code-surface">
                         <pre className="text-[10px] font-mono leading-relaxed p-3 text-slate-300"
                           dangerouslySetInnerHTML={{ __html: scriptHighlighted! }} />
                       </div>
@@ -573,7 +573,7 @@ function WorkflowGraphInner({ workflow, workflowId, files }: {
       else if (highlighted) opacity = onPath ? 1 : 0.06;
       const isHovered = e.id === hoveredEdgeId;
       const isPinned  = e.id === pinnedEdgeId;
-      const stroke    = isHovered ? "#3b82f6" : isPinned ? "#7c3aed" : "#94a3b8";
+      const stroke    = isHovered ? "var(--color-blue-500)" : isPinned ? "var(--color-violet-600)" : "var(--color-slate-400)";
       return {
         ...e,
         style: { ...e.style, opacity, strokeWidth: isActive ? 3 : 1.5, stroke, transition: "opacity 0.15s, stroke-width 0.15s" },
@@ -748,7 +748,7 @@ function WorkflowGraphInner({ workflow, workflowId, files }: {
       {/* ── Content ─────────────────────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 relative">
         {displayView === "json" ? (
-          <div className="h-full overflow-auto bg-slate-950 p-4">
+          <div className="h-full overflow-auto bg-slate-950 code-surface p-4">
             <pre className="text-[11px] font-mono text-slate-300 whitespace-pre-wrap break-all">
               {(() => { try { return JSON.stringify(JSON.parse(topLevelJson), null, 2); } catch { return topLevelJson; } })()}
             </pre>
@@ -773,16 +773,16 @@ function WorkflowGraphInner({ workflow, workflowId, files }: {
             maxZoom={2}
           >
             <Panel position="top-left"><Legend /></Panel>
-            <Background color="#e2e8f0" gap={20} size={1} />
+            <Background color="var(--color-slate-200)" gap={20} size={1} />
             <Controls showInteractive={false} showFitView={false} />
             <MiniMap
               nodeColor={(n) => {
-                if (n.type === "wfStart") return "#10b981";
-                if (n.type === "wfEnd")   return "#475569";
+                if (n.type === "wfStart") return "var(--color-emerald-500)";
+                if (n.type === "wfEnd")   return "var(--color-slate-600)";
                 const k = (n.data as { kind?: string }).kind;
-                if (k === "approvalTask")     return "#93c5fd";
-                if (k === "exclusiveGateway") return "#fcd34d";
-                return "#c4b5fd";
+                if (k === "approvalTask")     return "var(--color-blue-300)";
+                if (k === "exclusiveGateway") return "var(--color-amber-300)";
+                return "var(--color-violet-300)";
               }}
               zoomable pannable
               maskColor="rgba(241,245,249,0.7)"
@@ -816,7 +816,7 @@ function WorkflowGraphInner({ workflow, workflowId, files }: {
                 <div
                   ref={modalRef}
                   tabIndex={-1}
-                  className="bg-white rounded-xl shadow-2xl flex flex-col overflow-hidden outline-none"
+                  className="bg-tile rounded-[18px] ring-1 ring-inset ring-line-2 shadow-[var(--popover-shadow)] flex flex-col overflow-hidden outline-none"
                   style={{ width: "60vw", maxWidth: 960, height: "60vh", maxHeight: "90vh" }}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -867,7 +867,7 @@ function WorkflowGraphInner({ workflow, workflowId, files }: {
                     </button>
                   </div>
                   {/* Script content */}
-                  <div className="flex-1 min-h-0 overflow-hidden bg-slate-950">
+                  <div className="flex-1 min-h-0 overflow-hidden bg-slate-950 code-surface">
                     <p className="px-4 pt-3 pb-1 text-[10px] font-medium text-slate-400 shrink-0">{previewModal.scriptFileName}</p>
                     <div className="overflow-auto h-full">
                       <pre

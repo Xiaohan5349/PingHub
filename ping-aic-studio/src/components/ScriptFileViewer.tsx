@@ -1070,7 +1070,7 @@ export function ScriptFileViewer({ content, fileName, environment, relPath, high
       ref={containerRef}
       onMouseEnter={() => { hoveredRef.current = true; }}
       onMouseLeave={() => { hoveredRef.current = false; }}
-      className="h-full flex flex-col bg-slate-900 text-slate-300 min-h-0"
+      className="h-full flex flex-col bg-slate-900 code-surface text-slate-300 min-h-0"
     >
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-800 shrink-0 text-[11px]">

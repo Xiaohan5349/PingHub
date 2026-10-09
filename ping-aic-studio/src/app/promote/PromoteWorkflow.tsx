@@ -858,9 +858,9 @@ function ArchiveTable({ tasks, environments, onRestore }: { tasks: PromotionTask
                     {task.description && <p className="text-[10px] text-slate-400 mt-0.5 truncate max-w-[200px]">{task.description}</p>}
                   </td>
                   <td className="px-4 py-2.5 text-xs text-slate-600">
-                    <span className="font-mono">{srcLabel}</span>
+                    <span className="">{srcLabel}</span>
                     <span className="text-slate-400 mx-1">→</span>
-                    <span className="font-mono">{tgtLabel}</span>
+                    <span className="">{tgtLabel}</span>
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex flex-wrap gap-1">
@@ -1185,30 +1185,20 @@ export function PromoteWorkflow({
   return (
     <div className="space-y-6">
       {/* Sub-tabs */}
-      <div className="flex items-center gap-1 border-b border-slate-200">
+      <div className="seg">
         <button
           type="button"
           onClick={() => setPromoteTab("tasks")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-            promoteTab === "tasks"
-              ? "border-indigo-600 text-indigo-700"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          )}
+          className={cn("seg-item", promoteTab === "tasks" && "seg-item-active")}
         >
-          Tasks {tasks.length > 0 && <span className="ml-1 text-xs text-slate-400">({tasks.length})</span>}
+          Tasks {tasks.length > 0 && <span className="text-xs font-normal text-ink-3">{tasks.length}</span>}
         </button>
         <button
           type="button"
           onClick={() => setPromoteTab("archive")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors",
-            promoteTab === "archive"
-              ? "border-indigo-600 text-indigo-700"
-              : "border-transparent text-slate-500 hover:text-slate-700"
-          )}
+          className={cn("seg-item", promoteTab === "archive" && "seg-item-active")}
         >
-          Archive {archivedTasks.length > 0 && <span className="ml-1 text-xs text-slate-400">({archivedTasks.length})</span>}
+          Archive {archivedTasks.length > 0 && <span className="text-xs font-normal text-ink-3">{archivedTasks.length}</span>}
         </button>
       </div>
 

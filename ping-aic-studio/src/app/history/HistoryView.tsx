@@ -72,11 +72,11 @@ function RecordDrawer({
 }) {
   return (
     <div
-      className="fixed left-0 right-0 bottom-0 top-14 z-40 bg-slate-900/40"
+      className="fixed left-0 right-0 bottom-0 top-[var(--app-header-h,58px)] z-40 bg-overlay"
       onClick={onClose}
     >
       <aside
-        className="fixed right-0 top-14 bottom-0 w-[min(560px,100vw)] bg-white shadow-2xl overflow-y-auto"
+        className="fixed right-0 top-[var(--app-header-h,58px)] bottom-0 w-[min(560px,100vw)] bg-tile border-l border-line-2 shadow-[var(--popover-shadow)] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -103,7 +103,7 @@ function RecordDrawer({
         <div className="p-6 space-y-4">
           <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
             <dt className="text-slate-400 text-xs pt-0.5">Kind</dt>
-            <dd className="font-mono text-xs text-slate-700">{record.kind === "commit" ? "git commit" : "op log"}</dd>
+            <dd className="text-xs text-slate-700">{record.kind === "commit" ? "git commit" : "op log"}</dd>
 
             <dt className="text-slate-400 text-xs pt-0.5">Status</dt>
             <dd>
@@ -129,7 +129,7 @@ function RecordDrawer({
             )}
 
             <dt className="text-slate-400 text-xs pt-0.5">Duration</dt>
-            <dd className="font-mono text-xs text-slate-700">{formatDuration(record.duration)}</dd>
+            <dd className="text-xs text-slate-700">{formatDuration(record.duration)}</dd>
 
             {record.scopes.length > 0 && (
               <>
@@ -141,7 +141,7 @@ function RecordDrawer({
             {record.author && (
               <>
                 <dt className="text-slate-400 text-xs pt-0.5">Author</dt>
-                <dd className="font-mono text-xs text-slate-700">{record.author}</dd>
+                <dd className="text-xs text-slate-700">{record.author}</dd>
               </>
             )}
 
@@ -191,7 +191,7 @@ function RecordDrawer({
             {record.logEntryCount != null && (
               <>
                 <dt className="text-slate-400 text-xs pt-0.5">Log Entries</dt>
-                <dd className="font-mono text-xs text-slate-700">{record.logEntryCount.toLocaleString()}</dd>
+                <dd className="text-xs text-slate-700">{record.logEntryCount.toLocaleString()}</dd>
               </>
             )}
           </dl>
@@ -216,7 +216,7 @@ function RecordDrawer({
           {"logs" in record && record.logs ? (
             <div>
               <div className="label-xs mb-2">LOGS</div>
-              <pre className="text-[11px] bg-slate-900 text-slate-100 p-4 rounded-lg overflow-x-auto whitespace-pre-wrap break-all">
+              <pre className="text-[11px] bg-slate-900 code-surface text-slate-100 p-4 rounded-lg overflow-x-auto whitespace-pre-wrap break-all">
                 {String((record as { logs: unknown }).logs)}
               </pre>
             </div>

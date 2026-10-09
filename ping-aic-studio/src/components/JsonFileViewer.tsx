@@ -455,7 +455,7 @@ export function JsonFileViewer({ content, fileName, highlightLine }: Props) {
 
   if (!parsed.ok) {
     return (
-      <div className={cn("flex flex-col bg-slate-900", fullscreen ? "fixed inset-0 z-50" : "h-full")}>
+      <div className={cn("flex flex-col bg-slate-900 code-surface", fullscreen ? "fixed inset-0 z-50" : "h-full")}>
         <div className="px-3 py-1.5 text-[11px] text-amber-300 bg-amber-900/30 border-b border-amber-800/50 shrink-0">
           Unable to parse JSON ({parsed.error}). Showing raw contents.
         </div>
@@ -471,7 +471,7 @@ export function JsonFileViewer({ content, fileName, highlightLine }: Props) {
   const matchLineSet = mode === "raw" ? new Set(matchesRaw) : undefined;
 
   return (
-    <div className={cn("flex flex-col bg-slate-900 text-slate-300 min-h-0", fullscreen ? "fixed inset-0 z-50" : "h-full")}>
+    <div className={cn("flex flex-col bg-slate-900 code-surface text-slate-300 min-h-0", fullscreen ? "fixed inset-0 z-50" : "h-full")}>
       {/* Toolbar */}
       <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-800 shrink-0 text-[11px]">
         <div className="flex rounded bg-slate-800 overflow-hidden">

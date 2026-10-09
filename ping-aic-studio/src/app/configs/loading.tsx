@@ -25,7 +25,7 @@ export default function Loading() {
                         </div>
                     </div>
                     {/* Right panel skeleton */}
-                    <div className="flex-1 bg-slate-900 rounded-lg border border-slate-200 min-h-[500px]" />
+                    <div className="flex-1 bg-slate-900 code-surface rounded-lg border border-slate-200 min-h-[500px]" />
                 </div>
             </div>
         </div>

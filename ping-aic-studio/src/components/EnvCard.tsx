@@ -17,6 +17,7 @@ export interface EnvCardProps {
   lastPush: { at: string; status: "success" | "failed"; scopes?: string[] } | null;
   release?: ReleaseCacheEntry | null;
   onClick?: () => void;
+  className?: string;
 }
 
 const DOT: Record<string, string> = {
@@ -38,7 +39,7 @@ function timeAgo(iso: string): string {
   return `${d}d ago`;
 }
 
-export function EnvCard({ env, health, healthInfo, lastPull, lastPush, release, onClick }: EnvCardProps) {
+export function EnvCard({ env, health, healthInfo, lastPull, lastPush, release, onClick, className }: EnvCardProps) {
   return (
     <div
       role={onClick ? "button" : undefined}
@@ -46,41 +47,47 @@ export function EnvCard({ env, health, healthInfo, lastPull, lastPush, release, 
       onClick={onClick}
       onKeyDown={onClick ? (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onClick(); } } : undefined}
       className={cn(
-        "card-padded text-left transition-shadow hover:shadow-[0_2px_8px_rgba(15,23,42,0.06)]",
+        "card p-5 text-left transition-colors hover:border-line-2",
         onClick && "cursor-pointer",
-        health === "error" && "border-rose-200"
+        health === "error" && "border-rose-200",
+        className,
       )}
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <span className={cn("w-2 h-2 rounded-full shrink-0", DOT[env.color] ?? DOT.slate)} />
-          <span className="font-semibold text-[14px] text-slate-900">{env.label}</span>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className={cn("w-2 h-2 rounded-full shrink-0", DOT[env.color] ?? DOT.slate)} />
+            <span className="font-semibold text-base text-ink truncate">{env.label}</span>
+            {env.name !== env.label && (
+              <span className="font-mono text-xs text-ink-3 shrink-0">{env.name}</span>
+            )}
+          </div>
+          {env.baseUrl && (
+            <div className="mt-1 text-xs text-ink-3 font-mono truncate" title={env.baseUrl}>{env.baseUrl}</div>
+          )}
         </div>
         <HealthBadge state={health} info={healthInfo} />
       </div>
-      {env.baseUrl && (
-        <div className="text-[11px] text-slate-500 font-mono truncate mb-3">{env.baseUrl}</div>
-      )}
-      <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px]">
-        <div className="min-w-0">
-          <div className="text-slate-400">Last pull</div>
-          <div className={cn("font-medium", lastPull?.status === "failed" ? "text-rose-600" : "text-slate-700")}>
+      <div className="grid grid-cols-2 gap-2.5 mt-4">
+        <div className="rounded-lg bg-inset ring-1 ring-inset ring-line px-3 py-2.5 min-w-0">
+          <div className="text-xs text-ink-3">Last pull</div>
+          <div className={cn("font-semibold text-sm mt-0.5", lastPull?.status === "failed" ? "text-rose-600" : "text-ink")}>
             {lastPull ? timeAgo(lastPull.at) : "—"}
           </div>
           {lastPull && lastPull.scopes && lastPull.scopes.length > 0 && (
-            <div className="text-[10px] truncate">
+            <div className="text-xs truncate">
               <ScopesBadge env={env.name} scopes={lastPull.scopes} timestamp={lastPull.at} />
             </div>
           )}
         </div>
-        <div className="text-right min-w-0">
-          <div className="text-slate-400">Last push</div>
-          <div className={cn("font-medium", lastPush?.status === "failed" ? "text-rose-600" : "text-slate-700")}>
-            {lastPush ? timeAgo(lastPush.at) : "—"}
+        <div className="rounded-lg bg-inset ring-1 ring-inset ring-line px-3 py-2.5 min-w-0">
+          <div className="text-xs text-ink-3">Last push</div>
+          <div className={cn("font-semibold text-sm mt-0.5", lastPush?.status === "failed" ? "text-rose-600" : "text-ink")}>
+            {lastPush ? `${timeAgo(lastPush.at)}${lastPush.status === "failed" ? ", failed" : ""}` : "—"}
           </div>
           {lastPush && lastPush.scopes && lastPush.scopes.length > 0 && (
             <div
-              className="text-[10px] text-slate-500 truncate"
+              className="text-xs text-ink-2 truncate"
               title={lastPush.scopes.join(", ")}
             >
               {lastPush.scopes.length} scope{lastPush.scopes.length !== 1 ? "s" : ""}
@@ -96,7 +103,7 @@ export function EnvCard({ env, health, healthInfo, lastPull, lastPush, release, 
 function ReleaseStrip({ release }: { release: ReleaseCacheEntry | null }) {
   if (!release) {
     return (
-      <div className="border-t border-slate-100 pt-2.5 mt-2.5 text-[11px] text-slate-400">
+      <div className="mt-3 text-xs text-ink-3">
         Version unknown — refresh to fetch
       </div>
     );
@@ -109,7 +116,7 @@ function ReleaseStrip({ release }: { release: ReleaseCacheEntry | null }) {
     return (
       <div
         className={cn(
-          "border-t border-slate-100 pt-2.5 mt-2.5 text-[11px] truncate",
+          "mt-3 text-xs truncate",
           isWarning ? "text-amber-700" : "text-rose-600",
         )}
         title={msg}
@@ -126,36 +133,36 @@ function ReleaseStrip({ release }: { release: ReleaseCacheEntry | null }) {
     urgency === "overdue" ? (
       <span className="text-rose-600 font-medium" title={nextUpgrade ?? undefined}>
         overdue{days !== null ? ` by ${Math.abs(days)}d` : ""}
-        {plannedDate && <span className="ml-1 font-normal opacity-75">(planned {plannedDate})</span>}
+        {plannedDate && <span className="ml-1 font-normal text-ink-3">(planned {plannedDate})</span>}
       </span>
     )
       : urgency === "soon" ? (
         <span className="text-amber-700 font-medium" title={nextUpgrade ?? undefined}>
           upgrade in {days}d
-          {plannedDate && <span className="ml-1 font-normal opacity-75">({plannedDate})</span>}
+          {plannedDate && <span className="ml-1 font-normal text-ink-3">({plannedDate})</span>}
         </span>
       )
         : urgency === "later" ? (
-          <span className="text-slate-500" title={nextUpgrade ?? undefined}>
+          <span className="text-ink-2" title={nextUpgrade ?? undefined}>
             upgrade in {days}d
-            {plannedDate && <span className="ml-1 opacity-75">({plannedDate})</span>}
+            {plannedDate && <span className="ml-1 text-ink-3">({plannedDate})</span>}
           </span>
         )
-          : <span className="text-slate-400">no upgrade scheduled</span>;
+          : <span className="text-ink-3">no upgrade scheduled</span>;
   return (
-    <div className="border-t border-slate-100 pt-2.5 mt-2.5 text-[11px] flex items-center justify-between gap-2">
+    <div className="mt-3 text-[12.5px] flex flex-wrap items-center justify-between gap-x-2 gap-y-1">
       <div className="flex items-center gap-1.5 min-w-0">
-        <span className="font-mono text-slate-700 truncate" title={currentVersion}>v{currentVersion}</span>
+        <span className="font-mono text-ink truncate" title={currentVersion}>v{currentVersion}</span>
         <span className={cn(
-          "inline-block px-1.5 py-0.5 rounded text-[10px] border",
+          "inline-block px-2 rounded-md text-[11.5px] font-medium ring-1 ring-inset",
           channel === "rapid"
-            ? "bg-indigo-50 text-indigo-700 border-indigo-200"
-            : "bg-emerald-50 text-emerald-700 border-emerald-200",
+            ? "text-indigo-600 ring-indigo-400"
+            : "text-ink-2 ring-line-2",
         )}>
           {channel}
         </span>
       </div>
-      <div className="text-right shrink-0">{urgencyBadge}</div>
+      <div className="text-right">{urgencyBadge}</div>
     </div>
   );
 }

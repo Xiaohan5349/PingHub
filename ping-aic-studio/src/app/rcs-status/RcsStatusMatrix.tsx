@@ -467,7 +467,7 @@ export function RcsStatusMatrix() {
         </div>
         <div
           ref={logRef}
-          className="font-mono text-[11px] bg-slate-900 text-slate-100 rounded-md p-3 h-40 overflow-auto whitespace-pre-wrap"
+          className="font-mono text-[11px] bg-slate-900 code-surface text-slate-100 rounded-md p-3 h-40 overflow-auto whitespace-pre-wrap"
         >
           {log || <span className="text-slate-500">idle</span>}
         </div>
