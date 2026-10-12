@@ -9,6 +9,7 @@ import { useDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { logEntryMatchKey } from "@/lib/log-match-navigation";
 import { parseQuery } from "@/lib/log-query";
+import { buildSearchQueryFilter, normalizeSearchKeywords } from "@/lib/log-search-filter";
 import { useBusyState } from "@/hooks/useBusyState";
 import { DEFAULT_LOG_SOURCES } from "@/lib/logs/log-sources";
 
@@ -42,30 +43,6 @@ const TailBufferContext = createContext<number>(TAIL_BUFFER_DEFAULT);
 
 interface EnvWithLogApi extends Environment {
   hasLogApi: boolean;
-}
-
-/**
- * Pre-process the Search keywords box before passing to parseQuery.
- *
- * The boolean parser treats whitespace between barewords as implicit AND,
- * which is the right default for the Filter and Highlight boxes. For the
- * Search keywords box, however, users typically paste a phrase (e.g. an
- * error message or audit description) and expect it to match as-is. To make
- * that work without forcing them to add quotes, when the input contains no
- * boolean operators (`&&`, `||`, `,`), parens, or quotes, we wrap it as a
- * single quoted phrase so the parser sees one literal TERM.
- */
-function normalizeSearchKeywords(raw: string): string {
-  const trimmed = raw.trim();
-  if (!trimmed) return trimmed;
-  const hasOperator =
-    trimmed.includes("&&") ||
-    trimmed.includes("||") ||
-    /[,()"]/.test(trimmed);
-  if (hasOperator) return trimmed;
-  // Bareword phrase: escape backslashes (no quotes possible because of the
-  // regex above) and wrap in double quotes.
-  return `"${trimmed.replace(/\\/g, "\\\\")}"`;
 }
 
 interface LogEntry {
@@ -3264,20 +3241,15 @@ export function LogsExplorer({
     // The Filter and Highlight boxes are client-side only — do NOT include them here.
     // This mirrors Tenant Utilities' approach: only matching entries are returned by AIC,
     // dramatically reducing page count and eliminating rate-limit risk on long ranges.
-    function escapeFilterValue(v: string) { return v.replace(/\\/g, "\\\\").replace(/"/g, '\\"'); }
-    // Parse the Search keywords box and pull out positive leaf terms. Server-side filtering is
-    // a conservative OR over leaves; the client predicate (Filter box) still enforces && / () precisely.
-    const parsed = parseQuery(
-      normalizeSearchKeywords(searchKeywordsRawRef.current),
+    const { queryFilter, error: keywordsError } = buildSearchQueryFilter(
+      searchKeywordsRawRef.current,
       { matchCase: searchMatchCase, wholeWord: searchWholeWord },
     );
-    const allTerms = parsed.error ? [] : parsed.highlightTerms;
-    const queryFilter = allTerms.length > 0
-      ? allTerms.map((t) => {
-        const v = escapeFilterValue(t);
-        return `(/payload co "${v}") or (/payload/message co "${v}") or (/payload/eventName co "${v}")`;
-      }).join(" or ")
-      : undefined;
+    if (keywordsError) {
+      setError(keywordsError);
+      onConfigChange({ searching: false });
+      return doCleanup;
+    }
 
     setError("");
     setEntries([]);
