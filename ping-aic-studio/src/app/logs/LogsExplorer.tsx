@@ -9,6 +9,7 @@ import { useDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { logEntryMatchKey } from "@/lib/log-match-navigation";
 import { parseQuery } from "@/lib/log-query";
+import { appendClause, buildClause, flattenPayload, operatorsFor, type FilterOp, type PayloadField } from "@/lib/log-filter-builder";
 import { useBusyState } from "@/hooks/useBusyState";
 import { DEFAULT_LOG_SOURCES } from "@/lib/logs/log-sources";
 
@@ -2387,6 +2388,8 @@ const EntryRow = memo(function EntryRow({
   matchCase = false,
   wholeWord = false,
   dupeCount = 1,
+  onPickField,
+  pickedKey = null,
 }: {
   entry: LogEntry;
   source: string;
@@ -2407,8 +2410,15 @@ const EntryRow = memo(function EntryRow({
   matchCase?: boolean;
   wholeWord?: boolean;
   dupeCount?: number;
+  /** Clicking a field value in the expanded row picks it for the filter
+   *  builder; `part` is the selected substring of a string value, if any. */
+  onPickField?: (field: PayloadField, part?: string) => void;
+  /** `pickedFieldKey()` of the field currently in the builder. */
+  pickedKey?: string | null;
 }) {
   const [txCopied, setTxCopied] = useState(false);
+  const [rawView, setRawView] = useState(false);
+  const fields = useMemo(() => (expanded ? flattenPayload(entry.payload) : []), [expanded, entry]);
   const tz = useContext(TzContext);
   const effectiveSource = entry.source ?? source;
   const level = getLevel(entry);
@@ -2566,15 +2576,176 @@ const EntryRow = memo(function EntryRow({
       {expanded && (
         <tr className="bg-slate-950 code-surface border-b border-slate-700">
           <td colSpan={6} className="p-0">
-            <pre className="p-4 text-xs font-mono text-green-300 overflow-x-auto whitespace-pre-wrap break-all max-h-96 overflow-y-auto leading-5">
-              {highlight(isText ? getTextPayload(entry) : JSON.stringify(entry.payload, null, 2))}
-            </pre>
+            <div className="flex items-center gap-2 px-4 pt-2">
+              {onPickField && !rawView && (
+                <span className="text-[10px] text-slate-400">
+                  Click a value to build a server filter — select part of a text value to use just that part
+                </span>
+              )}
+              <div className="seg-sm ml-auto">
+                {(["Fields", "Raw"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setRawView(v === "Raw")}
+                    className={cn("seg-sm-item", rawView === (v === "Raw") && "seg-sm-item-active")}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {rawView ? (
+              <pre className="p-4 text-xs font-mono text-green-300 overflow-x-auto whitespace-pre-wrap break-all max-h-96 overflow-y-auto leading-5">
+                {highlight(isText ? getTextPayload(entry) : JSON.stringify(entry.payload, null, 2))}
+              </pre>
+            ) : (
+              <div className="px-2 pt-1 pb-3 max-h-96 overflow-y-auto">
+                <table className="w-full text-xs font-mono leading-5">
+                  <tbody>
+                    {fields.map((f, i) => (
+                      <tr key={i} className={cn("align-top", pickedKey === pickedFieldKey(f) && "bg-sky-900/60")}>
+                        <td className="px-2 text-slate-400 whitespace-nowrap" title={f.path}>
+                          {f.path.replace(/^\/payload\/?/, "") || "payload"}
+                        </td>
+                        <td
+                          className={cn(
+                            "px-2 w-full break-all whitespace-pre-wrap",
+                            f.type === "number" ? "text-amber-300" : f.type === "boolean" ? "text-sky-300" : "text-green-300",
+                            onPickField && "cursor-pointer hover:bg-slate-800",
+                          )}
+                          onClick={onPickField && ((e) => {
+                            // A selection inside this cell narrows the value to just that part.
+                            const sel = window.getSelection();
+                            const cell = e.currentTarget;
+                            const part = sel && !sel.isCollapsed && cell.contains(sel.anchorNode) && cell.contains(sel.focusNode)
+                              ? sel.toString()
+                              : "";
+                            onPickField(f, f.type === "string" && part && part !== f.value ? part : undefined);
+                          })}
+                        >
+                          {highlight(f.value)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </td>
         </tr>
       )}
     </Fragment>
   );
 });
+
+// ── Server filter builder ───────────────────────────────────────────────────
+
+function pickedFieldKey(f: PayloadField): string {
+  return `${f.path}\u0000${f.value}`;
+}
+
+/**
+ * Builds one `_queryFilter` clause from a field picked in an expanded table
+ * row: optional `!`, an operator valid for the value's type, and an editable
+ * value. Keyed by the parent on each pick so its state resets.
+ */
+function FilterBuilderBar({
+  field,
+  part,
+  hasFilter,
+  onAdd,
+  onClose,
+}: {
+  field: PayloadField;
+  /** Selected substring of a string value; defaults the operator to `co`. */
+  part?: string;
+  /** Whether the Server filter already has content (shows the and/or join). */
+  hasFilter: boolean;
+  onAdd: (clause: string, join: "and" | "or") => void;
+  onClose: () => void;
+}) {
+  const [op, setOp] = useState<FilterOp>(part ? "co" : "eq");
+  const [negate, setNegate] = useState(false);
+  const [value, setValue] = useState(part ?? field.value);
+  const [join, setJoin] = useState<"and" | "or">("and");
+  const v = value.trim();
+  const invalid = op !== "pr" && (
+    field.type === "number" ? v === "" || !Number.isFinite(Number(v))
+      : field.type === "boolean" ? v !== "true" && v !== "false"
+        : value === ""
+  );
+  const clause = buildClause({ path: field.path, op, value, type: field.type, negate });
+
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-100 text-xs">
+      <label className="font-medium text-slate-500 shrink-0">Build</label>
+      <span className="font-mono text-slate-600 truncate max-w-[18rem] shrink-0" title={field.path}>{field.path}</span>
+      <button
+        type="button"
+        onClick={() => setNegate((n) => !n)}
+        title="Negate: wrap the clause in !( )"
+        className={cn("toggle-chip font-mono", negate && "toggle-chip-on")}
+      >
+        !
+      </button>
+      <select
+        value={op}
+        onChange={(e) => setOp(e.target.value as FilterOp)}
+        title={field.type === "string" ? "gt / ge / lt / le only work on numeric fields" : undefined}
+        className="rounded border border-slate-300 px-1.5 py-0.5 text-[11px] font-mono text-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-500"
+      >
+        {operatorsFor(field.type).map((o) => (
+          <option key={o} value={o}>{o}</option>
+        ))}
+      </select>
+      {op !== "pr" && (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className={cn(
+            "w-56 min-w-0 rounded border px-2 py-0.5 font-mono focus:outline-none focus:ring-1",
+            invalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
+          )}
+        />
+      )}
+      {hasFilter && (
+        <div className="seg-sm" title="How to join with the existing server filter">
+          {(["and", "or"] as const).map((j) => (
+            <button
+              key={j}
+              type="button"
+              onClick={() => setJoin(j)}
+              className={cn("seg-sm-item font-mono", join === j && "seg-sm-item-active")}
+            >
+              {j}
+            </button>
+          ))}
+        </div>
+      )}
+      <code className="flex-1 min-w-0 truncate font-mono text-[11px] text-slate-500" title={clause}>
+        {clause}
+      </code>
+      <button
+        type="button"
+        onClick={() => onAdd(clause, join)}
+        disabled={invalid}
+        className="px-3 py-1 text-xs font-medium bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50 transition-colors shrink-0"
+      >
+        Add to server filter
+      </button>
+      <button
+        type="button"
+        onClick={onClose}
+        title="Close"
+        className="px-1.5 text-slate-400 hover:text-slate-600 shrink-0"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
 
 // ── Transaction drill-down modal ────────────────────────────────────────────
 
@@ -2774,6 +2945,18 @@ export function LogsExplorer({
   const [serverFilterRaw, setServerFilterRaw] = useState("");
   const serverFilterRawRef = useRef("");
   const [tailFilterSeq, setTailFilterSeq] = useState(0);
+  // Field picked from an expanded table row for the filter builder. `nonce`
+  // keys the builder so re-picking (even the same field) resets its state.
+  const [pickedField, setPickedField] = useState<{ field: PayloadField; part?: string; nonce: number } | null>(null);
+  const handlePickField = useCallback((field: PayloadField, part?: string) => {
+    setPickedField((p) => ({ field, part, nonce: (p?.nonce ?? 0) + 1 }));
+  }, []);
+  const addToServerFilter = useCallback((clause: string, join: "and" | "or") => {
+    const next = appendClause(serverFilterRawRef.current, clause, join);
+    setServerFilterRaw(next);
+    serverFilterRawRef.current = next;
+    setPickedField(null);
+  }, []);
   const [matchCursor, setMatchCursor] = useState(-1); // index into matchRows; -1 = none selected
   const [activeMatchKey, setActiveMatchKey] = useState<string | null>(null);
   const [matchScrollNonce, setMatchScrollNonce] = useState(0);
@@ -3765,6 +3948,8 @@ export function LogsExplorer({
   // Server filter input, shared by the Tail and Search toolbars. Local search
   // reuses it as the archive's plain-text search.
   const localSearch = mode === "search" && config.dataSource === "local";
+  // Picking fields only makes sense where the Server filter is a CREST filter.
+  const canBuildFilter = (mode === "tail" || mode === "search") && !localSearch;
   const renderServerFilter = (onEnter: () => void, disabled: boolean) => (
     <>
       <span className="text-slate-300 select-none">|</span>
@@ -4086,6 +4271,17 @@ export function LogsExplorer({
             })()}
 
           </div>
+
+          {canBuildFilter && pickedField && (
+            <FilterBuilderBar
+              key={pickedField.nonce}
+              field={pickedField.field}
+              part={pickedField.part}
+              hasFilter={serverFilterRaw.trim() !== ""}
+              onAdd={addToServerFilter}
+              onClose={() => setPickedField(null)}
+            />
+          )}
 
           {/* Row 2: Query — Filter and Highlight side-by-side; share one Aa/[W] toggle pair and the match navigator */}
           <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-100">
@@ -4676,6 +4872,8 @@ export function LogsExplorer({
                       keywords={keywords}
                       onTransactionClick={(txId) => setDrilldown({ txId })}
                       onTimestampClick={onOpenContextTab}
+                      onPickField={canBuildFilter ? handlePickField : undefined}
+                      pickedKey={canBuildFilter && pickedField ? pickedFieldKey(pickedField.field) : null}
                       fullscreen={fullscreen}
                       showFullMessage={showFullMessage}
                       selected={selectedEntryIdx === globalIdx}
