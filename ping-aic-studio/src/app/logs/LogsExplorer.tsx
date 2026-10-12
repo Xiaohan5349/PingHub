@@ -9,7 +9,6 @@ import { useDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { logEntryMatchKey } from "@/lib/log-match-navigation";
 import { parseQuery } from "@/lib/log-query";
-import { buildSearchQueryFilter, normalizeSearchKeywords } from "@/lib/log-search-filter";
 import { useBusyState } from "@/hooks/useBusyState";
 import { DEFAULT_LOG_SOURCES } from "@/lib/logs/log-sources";
 
@@ -2769,16 +2768,12 @@ export function LogsExplorer({
   const keywordsRawRef = useRef("");
   const [keywordsActive, setKeywordsActive] = useState(""); // debounced — drives actual highlighting
   const keywordsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Search-mode only: keywords sent to AIC as the server-side _queryFilter (separate
-  // from the client-side Highlight box, which only colors matches).
-  const [searchKeywordsRaw, setSearchKeywordsRaw] = useState("");
-  const searchKeywordsRawRef = useRef("");
-  // Snapshot of the Search keywords (and their case/word options) as of the
-  // last executed search. Edits to the input do NOT alter the displayed
-  // results — those terms are only re-read when the search is executed again.
-  const [searchKeywordsApplied, setSearchKeywordsApplied] = useState<{
-    raw: string; matchCase: boolean; wholeWord: boolean;
-  }>({ raw: "", matchCase: false, wholeWord: false });
+  // Server filter: a raw CREST _queryFilter sent to AIC as-is by Search and Tail
+  // (Remote). In Local mode the same box is the archive's text search. Read at
+  // search / tail start; Enter while tailing bumps tailFilterSeq to restart.
+  const [serverFilterRaw, setServerFilterRaw] = useState("");
+  const serverFilterRawRef = useRef("");
+  const [tailFilterSeq, setTailFilterSeq] = useState(0);
   const [matchCursor, setMatchCursor] = useState(-1); // index into matchRows; -1 = none selected
   const [activeMatchKey, setActiveMatchKey] = useState<string | null>(null);
   const [matchScrollNonce, setMatchScrollNonce] = useState(0);
@@ -2828,8 +2823,6 @@ export function LogsExplorer({
   // coloring of Filter / Search auto-highlighted terms uses Highlight's settings.
   const [filterMatchCase, setFilterMatchCase] = useState(false);
   const [filterWholeWord, setFilterWholeWord] = useState(false);
-  const [searchMatchCase, setSearchMatchCase] = useState(false);
-  const [searchWholeWord, setSearchWholeWord] = useState(false);
   const highlightInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -3177,23 +3170,24 @@ export function LogsExplorer({
 
   useEffect(() => {
     const levels = resolveLevels(levelFilter);
+    const queryFilter = serverFilterRawRef.current.trim() || undefined;
     if (tailing && !prevTailing.current) {
       // Start tail
       setTailTotalReceived(0);
       setEntries([]);
       setFetched(false);
       setError("");
-      workerRef.current?.postMessage({ type: "tail-start", env, sources: tailSources, tailSecs, levels });
+      workerRef.current?.postMessage({ type: "tail-start", env, sources: tailSources, tailSecs, levels, queryFilter });
     } else if (!tailing && prevTailing.current) {
       // Stop tail
       workerRef.current?.postMessage({ type: "tail-stop" });
     } else if (tailing && prevTailing.current) {
-      // Restart tail (tailSecs, selected sources, or levelFilter changed)
-      workerRef.current?.postMessage({ type: "tail-start", env, sources: tailSources, tailSecs, levels });
+      // Restart tail (tailSecs, selected sources, levelFilter or server filter changed)
+      workerRef.current?.postMessage({ type: "tail-start", env, sources: tailSources, tailSecs, levels, queryFilter });
     }
     prevTailing.current = tailing;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tailing, tailSecs, levelFilter, tailSources.join(",")]);
+  }, [tailing, tailSecs, levelFilter, tailSources.join(","), tailFilterSeq]);
 
   // ── React to search mode fetch trigger ──
   const prevSearchSeq = useRef(0);
@@ -3237,36 +3231,20 @@ export function LogsExplorer({
       endTime = now.toISOString();
     }
 
-    // Build server-side _queryFilter from the dedicated Search keywords box (search mode only).
-    // The Filter and Highlight boxes are client-side only — do NOT include them here.
-    // This mirrors Tenant Utilities' approach: only matching entries are returned by AIC,
-    // dramatically reducing page count and eliminating rate-limit risk on long ranges.
-    const { queryFilter, error: keywordsError } = buildSearchQueryFilter(
-      searchKeywordsRawRef.current,
-      { matchCase: searchMatchCase, wholeWord: searchWholeWord },
-    );
-    if (keywordsError) {
-      setError(keywordsError);
-      onConfigChange({ searching: false });
-      return doCleanup;
-    }
+    // The Server filter box is sent to AIC verbatim as _queryFilter, so only
+    // matching entries are downloaded. The Filter and Highlight boxes are
+    // client-side only — do NOT include them here.
+    const queryFilter = serverFilterRawRef.current.trim() || undefined;
 
     setError("");
     setEntries([]);
     setFetched(false);
     setExpandedTableRows(new Set());
     setFetchProgress(null);
-    // Freeze the Search keywords + per-field options for this run so subsequent
-    // edits to the input don't re-filter the loaded results.
-    setSearchKeywordsApplied({
-      raw: searchKeywordsRawRef.current,
-      matchCase: searchMatchCase,
-      wholeWord: searchWholeWord,
-    });
     onConfigChange({ searching: true });
 
         if (config.dataSource === "local") {
-            const text = searchKeywordsRawRef.current.trim() || undefined;
+            const text = queryFilter;
             const lv = resolveLevels(levelFilter);
             const level = lv && lv.length === 1 ? lv[0] : undefined;
             const archiveSources = toArchiveSources(selectedSources);
@@ -3310,7 +3288,7 @@ export function LogsExplorer({
     [entries, levelFilter]);
 
   // Lazy per-entry JSON cache. JSON.stringify is the hottest op (used by
-  // filterQuery/searchKeywordsParsed/highlightQuery .test calls). At 200k
+  // filterQuery/highlightQuery .test calls). At 200k
   // entries an eager parallel array re-stringifies the whole buffer on every
   // tail tick — hundreds of MB churned per second. WeakMap keyed on the entry
   // object survives across re-renders; entries dropped from the circular
@@ -3337,17 +3315,7 @@ export function LogsExplorer({
     () => parseQuery(keywordsActive, { matchCase: highlightMatchCase, wholeWord: highlightWholeWord }),
     [keywordsActive, highlightMatchCase, highlightWholeWord],
   );
-  // Parsed Search keywords as of the last executed search (search mode only).
-  // Drives both the client-side AND/OR enforcement and auto-highlighting; live
-  // edits to the input are ignored until the user runs the search again.
-  const searchKeywordsParsed = useMemo(
-    () => parseQuery(normalizeSearchKeywords(searchKeywordsApplied.raw), {
-      matchCase: searchKeywordsApplied.matchCase,
-      wholeWord: searchKeywordsApplied.wholeWord,
-    }),
-    [searchKeywordsApplied],
-  );
-  // Auto-highlight terms = union of Highlight + Filter + Search keyword leaves.
+  // Auto-highlight terms = union of Highlight + Filter leaves.
   // Rendering uses Highlight's matchCase / wholeWord (uniform regex required).
   const keywords = useMemo(() => {
     const out: string[] = [];
@@ -3363,33 +3331,23 @@ export function LogsExplorer({
     };
     if (!highlightQuery.empty && !highlightQuery.error) push(highlightQuery.highlightTerms);
     if (!filterQuery.empty && !filterQuery.error) push(filterQuery.highlightTerms);
-    if (mode === "search" && !searchKeywordsParsed.empty && !searchKeywordsParsed.error) {
-      push(searchKeywordsParsed.highlightTerms);
-    }
     return out;
-  }, [highlightQuery, filterQuery, searchKeywordsParsed, mode, highlightMatchCase]);
+  }, [highlightQuery, filterQuery, highlightMatchCase]);
 
   const rawFilteredWithIdx = useMemo(() => {
-    // Server-side _queryFilter is a conservative OR over leaves of the Search box,
-    // so in search mode we also need to enforce the parsed Search query (which can
-    // contain && / () precedence) client-side. The Filter box query is always applied.
-    const applySearch =
-      mode === "search" && !searchKeywordsParsed.empty && !searchKeywordsParsed.error;
-    // Fast path: no filter active, no search-mode client-side gate — return a
-    // single shared identity-mapped array. Avoids allocating 200k wrapper
-    // objects on every tail tick when the user isn't filtering.
-    if (filterQuery.empty && !applySearch) {
+    // Fast path: no filter active — return a single shared identity-mapped
+    // array. Avoids allocating 200k wrapper objects on every tail tick when
+    // the user isn't filtering.
+    if (filterQuery.empty) {
       return levelFiltered.map((e, i) => ({ e, i }));
     }
     if (filterQuery.error) return [] as { e: LogEntry; i: number }[];
     return levelFiltered.reduce<{ e: LogEntry; i: number }[]>((acc, e, i) => {
-      const json = getEntryJson(e);
-      if (!filterQuery.test(json)) return acc;
-      if (applySearch && !searchKeywordsParsed.test(json)) return acc;
+      if (!filterQuery.test(getEntryJson(e))) return acc;
       acc.push({ e, i });
       return acc;
     }, []);
-  }, [levelFiltered, filterQuery, mode, searchKeywordsParsed, getEntryJson]);
+  }, [levelFiltered, filterQuery, getEntryJson]);
 
   // Dedupe pass — collapses exact-match duplicates to the first occurrence and tracks counts.
   // Key: source + level + message text. When off, dupeCounts is empty and everything passes through.
@@ -3804,6 +3762,38 @@ export function LogsExplorer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode]);
 
+  // Server filter input, shared by the Tail and Search toolbars. Local search
+  // reuses it as the archive's plain-text search.
+  const localSearch = mode === "search" && config.dataSource === "local";
+  const renderServerFilter = (onEnter: () => void, disabled: boolean) => (
+    <>
+      <span className="text-slate-300 select-none">|</span>
+      <label className="text-xs font-medium text-slate-500 whitespace-nowrap">
+        {localSearch ? "Text" : "Server filter"}
+      </label>
+      <input
+        type="text"
+        value={serverFilterRaw}
+        onChange={(e) => {
+          setServerFilterRaw(e.target.value);
+          serverFilterRawRef.current = e.target.value;
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !disabled) {
+            e.preventDefault();
+            onEnter();
+          }
+        }}
+        disabled={disabled}
+        placeholder={localSearch ? "Text search in the local archive…" : '_queryFilter, e.g. /payload/eventName eq "AM-ACCESS-ATTEMPT"'}
+        title={localSearch
+          ? "Plain-text search over the local archive's indexed fields."
+          : "Sent to AIC as-is as _queryFilter (CREST syntax: eq co sw lt le gt ge pr, and / or / !( )). Pick fields from an expanded table row to build it. Leave blank for everything."}
+        className="flex-1 min-w-0 text-xs rounded border border-slate-300 px-2.5 py-1 font-mono focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 disabled:opacity-50"
+      />
+    </>
+  );
+
   return (
     <div className="space-y-4">
       {/* ── Tail status bar ── */}
@@ -3908,6 +3898,13 @@ export function LogsExplorer({
                     Stop Tail
                   </button>
                 )}
+                {renderServerFilter(
+                  () => {
+                    if (tailing) setTailFilterSeq((n) => n + 1);
+                    else if (selectedSources.length > 0 && !sourcesError) onConfigChange({ tailing: true });
+                  },
+                  loading || searching,
+                )}
               </>
             )}
 
@@ -4001,51 +3998,14 @@ export function LogsExplorer({
                       )}
                     </button>
                   )}
-                  {/* Server-side search keywords — sent to AIC as _queryFilter, runs at fetch time. */}
-                  <span className="text-slate-300 select-none">|</span>
-                  <label className="text-xs font-medium text-slate-500">Keywords</label>
-                  <input
-                    type="text"
-                    value={searchKeywordsRaw}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setSearchKeywordsRaw(val);
-                      searchKeywordsRawRef.current = val;
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !searching && !customRangeInvalid && selectedSources.length > 0 && !sourcesError) {
-                        e.preventDefault();
+                  {renderServerFilter(
+                    () => {
+                      if (!customRangeInvalid && selectedSources.length > 0 && !sourcesError) {
                         onConfigChange({ searchSeq: (searchSeq ?? 0) + 1 });
                       }
-                    }}
-                    disabled={searching}
-                    placeholder="Server-side keywords (||, &quot;phrase&quot;)…"
-                    title="Sent to AIC as _queryFilter — restricts what's downloaded. Leave blank to fetch everything in the time range."
-                    className="flex-1 min-w-0 text-xs rounded border border-slate-300 px-2.5 py-1 font-mono focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 disabled:opacity-50"
-                  />
-                  {/* Per-field Aa/[W] for Search keywords. Note: AIC's _queryFilter is
-                      always case-insensitive substring; these toggles control how the
-                      same terms are auto-highlighted in the rendered results. */}
-                  <div className="seg-sm">
-                    <button
-                      type="button"
-                      title="Case sensitive (auto-highlight only — AIC server is always case-insensitive)"
-                      onClick={() => setSearchMatchCase((v) => !v)}
-                      className={cn(
-                        "seg-sm-item font-mono",
-                        searchMatchCase && "seg-sm-item-active"
-                      )}
-                    >Aa</button>
-                    <button
-                      type="button"
-                      title="Whole word (auto-highlight only — AIC server has no whole-word operator)"
-                      onClick={() => setSearchWholeWord((v) => !v)}
-                      className={cn(
-                        "seg-sm-item font-mono",
-                        searchWholeWord && "seg-sm-item-active"
-                      )}
-                    >[W]</button>
-                  </div>
+                    },
+                    searching,
+                  )}
                   <div className="seg-sm">
                     {(["remote", "local"] as const).map((ds) => (
                       <button
