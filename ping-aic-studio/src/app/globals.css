@@ -299,7 +299,7 @@ button:disabled:is(
   }
 
   .seg-sm-item {
-    @apply inline-flex items-center h-6 px-2 rounded-md text-[11px] font-medium text-ink-2 hover:text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center h-6 px-2 rounded-md text-xs font-medium text-ink-2 hover:text-ink transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .seg-sm-item-active {
@@ -308,7 +308,7 @@ button:disabled:is(
 
   /* Standalone on/off toggle (Wrap, Auto-scroll, Dedupe, ...). */
   .toggle-chip {
-    @apply inline-flex items-center h-7 px-2 rounded-md text-[11px] font-medium ring-1 ring-inset ring-line-2 text-ink-2 hover:text-ink transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center h-7 px-2 rounded-md text-xs font-medium ring-1 ring-inset ring-line-2 text-ink-2 hover:text-ink transition-colors shrink-0 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .toggle-chip-on {
