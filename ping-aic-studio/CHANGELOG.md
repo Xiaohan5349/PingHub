@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Logs: build the queryFilter from log fields.** Expanded table rows list the payload as fields; click a field name or value (or select part of a text value) to build a clause with `!`, the field path (editable), an operator (`eq`, `co`, `sw`, `pr`, and `gt`/`ge`/`lt`/`le` for numbers) and an `and`/`or` join, then add it to the queryFilter box. Operators that do not fit the value type are shown struck through. Raw shows the JSON as before.
 
+- **Logs: paste a timestamp into the custom time range.** Pasting a log timestamp such as `2026-10-13T02:08:30.383Z` (or epoch seconds/milliseconds) fills the start or end box in the current time zone; the start rounds down and the end rounds up to the second so the pasted entry stays in range.
+
 ### Changed
 
 - **Logs: queryFilter box replaces Keywords.** It is sent to AIC as-is as `_queryFilter` and now applies to Tail as well as Search (Enter or Clear restarts a running tail). Keywords guessed a filter that missed values outside `message` and `eventName` in JSON logs. Local search still uses the box as plain text.
@@ -28,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The data pull API route no longer re-exports a helper, which failed the route type check in webpack production builds.
 - Open dropdown lists (time range, page size, …) are readable in the dark theme; their options now use the theme's tile and text colours.
+- The Logs toolbar (mode, queryFilter, filter builder, Search loaded, view) stays pinned under the header when the page scrolls.
 
 ## [0.4.0] - 2026-06-11
 
