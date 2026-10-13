@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Logs: the in-page Filter box is now "Search loaded".** It only narrows logs already on the page and never queries AIC; its placeholder and Highlight's now show plain examples instead of the operator shorthand.
 
 - **Logs: JSON view removed.** Table covers it: an expanded row shows the fields or the raw JSON, and Export still downloads everything as JSON. Tabs saved on JSON open in Table. Switching from Terminal to Table now expands the entry selected in Terminal.
+n- **Logs: Auto-scroll is a Tail control.** The toggle only shows while in Tail; Search and Transaction results always follow the newest page as it loads, pausing when you scroll away or click an entry.
 
 - **New look: Bento theme with light and dark modes.** Follows the OS setting by default; the header toggle switches and remembers the choice. Light uses warm paper tones, dark uses graphite; code, log, diff and graph panes follow the theme.
 - **Grouped navigation.** The 14 pages are grouped into Dashboard, Pipeline, Explore, Observe and Setup menus, with the current group's pages as a second row of tabs.
