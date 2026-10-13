@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Logs: build the queryFilter from log fields.** Expanded table rows list the payload as fields; click a field name or value (or select part of a text value) to build a clause with `!`, the field path (editable), an operator (`eq`, `co`, `sw`, `pr`, and `gt`/`ge`/`lt`/`le` for numbers) and an `and`/`or` join, then add it to the queryFilter box. Operators that do not fit the value type are shown struck through. Raw shows the JSON as before.
 
-- **Logs: paste a timestamp into the custom time range.** Pasting a log timestamp such as `2026-10-13T02:08:30.383Z` (or epoch seconds/milliseconds) fills the start or end box in the current time zone; the start rounds down and the end rounds up to the second so the pasted entry stays in range.
+- **Logs: type or paste a timestamp for the custom time range.** A `Pick | Text` switch sits next to the range. Text takes a log timestamp such as `2026-10-13T02:08:30.383Z` (or epoch seconds/milliseconds) and reads it in the current time zone; the start rounds down and the end rounds up to the second so that entry stays in range.
 
 ### Changed
 
