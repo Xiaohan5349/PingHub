@@ -1645,6 +1645,26 @@ const EntryRow = memo(function EntryRow({
 // value's type are shown disabled so it's clear they exist.
 const ALL_FILTER_OPS: FilterOp[] = ["eq", "co", "sw", "gt", "ge", "lt", "le", "pr"];
 
+// Shortcuts into the filter builder while nothing is loaded yet (there are no
+// rows to pick fields from). Paths common to the AIC JSON log sources.
+const START_FILTER_PATHS = ["/payload/eventName", "/payload/transactionId", "/payload/userId", "/payload/level", "/payload/response/status"];
+
+function FilterStartFields({ onPick }: { onPick: (field: PayloadField) => void }) {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-1.5 mt-3 text-xs">
+      <span className="text-slate-400">Build a queryFilter from:</span>
+      {START_FILTER_PATHS.map((path) => (
+        <button key={path} type="button" onClick={() => onPick({ path, value: "", type: "string" })} className="toggle-chip font-mono">
+          {path}
+        </button>
+      ))}
+      <button type="button" onClick={() => onPick({ path: "/payload/", value: "", type: "string" })} className="toggle-chip">
+        Other field…
+      </button>
+    </div>
+  );
+}
+
 function pickedFieldKey(f: PayloadField): string {
   return `${f.path}\u0000${f.value}`;
 }
@@ -3835,16 +3855,18 @@ export function LogsExplorer({
         >
           {viewMode === "terminal" ? (
             !fetched && !tailing ? (
-              <div className="flex items-center justify-center h-full min-h-[160px]">
+              <div className="flex flex-col items-center justify-center h-full min-h-[160px] px-4">
                 <p className="text-sm text-slate-400">
                   {anchorTimestamp ? "Loading context…" : "Select sources and start tailing or run a search"}
                 </p>
+                {canBuildFilter && !anchorTimestamp && <FilterStartFields onPick={handlePickField} />}
               </div>
             ) : deferredIsActive && filtered.length === 0 && fetched && !searching ? (
-              <div className="flex items-center justify-center h-full min-h-[160px]">
+              <div className="flex flex-col items-center justify-center h-full min-h-[160px] px-4">
                 <p className="text-sm text-slate-400">
                   {entries.length === 0 ? "No log entries returned." : "No entries match the filter."}
                 </p>
+                {canBuildFilter && entries.length === 0 && <FilterStartFields onPick={handlePickField} />}
               </div>
             ) : (
               <TailTerminal
@@ -3887,12 +3909,14 @@ export function LogsExplorer({
               />
             )
           ) : !fetched ? (
-            <div className="flex items-center justify-center h-full min-h-[160px]">
+            <div className="flex flex-col items-center justify-center h-full min-h-[160px] px-4">
               <p className="text-sm text-slate-400">Select at least one source and click Tail Logs or Search</p>
+              {canBuildFilter && <FilterStartFields onPick={handlePickField} />}
             </div>
           ) : !deferredIsActive ? null : filtered.length === 0 && !searching ? (
             <div className="p-8 text-center text-sm text-slate-400">
               {entries.length === 0 ? "No log entries returned for this time range." : "No entries match the filter."}
+              {canBuildFilter && entries.length === 0 && <FilterStartFields onPick={handlePickField} />}
             </div>
           ) : viewMode === "raw" ? (
             // Entries are the Log API `result` items untouched, so this is the raw response.
