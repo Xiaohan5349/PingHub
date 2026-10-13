@@ -23,8 +23,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Logs: Auto-scroll is a Tail control.** The toggle only shows while in Tail; Search and Transaction results always follow the newest page as it loads, pausing when you scroll away or click an entry.
 
-- **New look: Bento theme with light and dark modes.** Follows the OS setting by default; the header toggle switches and remembers the choice. Light uses warm paper tones, dark uses graphite; code, log, diff and graph panes follow the theme.
-- **Grouped navigation.** The 14 pages are grouped into Dashboard, Pipeline, Explore, Observe and Setup menus, with the current group's pages as a second row of tabs.
+- **New look: Bento theme with light and dark modes.** Follows the OS setting by default; the header toggle switches and remembers the choice. Light uses warm paper tones with a royal-blue accent, dark uses graphite with a brighter azure accent; code, log, diff and graph panes follow the theme.
+- **Grouped navigation.** The 14 pages are grouped into Dashboard, Pipeline, Explore, Observe and Setup menus, with the current group's pages as a second row of underline tabs; the current group itself is tinted in the accent colour so the two levels stay distinct.
 - **Dashboard tiles.** Pipeline order with tenant health, the most urgent upcoming AIC upgrade, and a tile per environment.
 - Consistent segmented controls and toggles across pages; dialogs and drawers share the tile style; system fonts replace the downloaded web fonts; monospace is kept for data such as ids, paths and logs.
 
