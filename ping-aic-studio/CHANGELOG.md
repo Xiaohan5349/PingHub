@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Logs: build the queryFilter from log fields.** Expanded table rows list the payload as fields; click a value (or select part of a text value) to build a clause with `!`, the field path (editable), an operator (`eq`, `co`, `sw`, `pr`, and `gt`/`ge`/`lt`/`le` for numbers) and an `and`/`or` join, then add it to the queryFilter box. Operators that do not fit the value type are shown struck through. Raw shows the JSON as before.
+- **Logs: build the queryFilter from log fields.** Expanded table rows list the payload as fields; click a field name or value (or select part of a text value) to build a clause with `!`, the field path (editable), an operator (`eq`, `co`, `sw`, `pr`, and `gt`/`ge`/`lt`/`le` for numbers) and an `and`/`or` join, then add it to the queryFilter box. Operators that do not fit the value type are shown struck through. Raw shows the JSON as before.
 
 ### Changed
 
@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The data pull API route no longer re-exports a helper, which failed the route type check in webpack production builds.
+- Open dropdown lists (time range, page size, …) are readable in the dark theme; their options now use the theme's tile and text colours.
 
 ## [0.4.0] - 2026-06-11
 
