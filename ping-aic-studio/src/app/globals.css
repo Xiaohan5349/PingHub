@@ -84,6 +84,15 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Native <select> popups take their colours from the options. Selects keep a
+   transparent background, so without this the open list can pair the theme's
+   light text with a light system background. */
+select option,
+select optgroup {
+  background-color: var(--tile);
+  color: var(--ink);
+}
+
 /* ── Console animations ──────────────────────────────────────────────────── */
 
 @keyframes log-fade-in {
