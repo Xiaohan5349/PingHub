@@ -4,7 +4,6 @@ import { useState, useEffect, useLayoutEffect, useRef, Fragment, startTransition
 import { createPortal } from "react-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Environment } from "@/lib/fr-config-types";
-import { EnvironmentBadge } from "@/components/EnvironmentBadge";
 import { useDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { logEntryMatchKey } from "@/lib/log-match-navigation";
@@ -3427,8 +3426,8 @@ export function LogsExplorer({
               value={rawSearch}
               onChange={(e) => handleFilterChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") applySearch(rawSearch); }}
-              placeholder='e.g.  error timeout (both)  ·  error || warn (either)  ·  "exact phrase"'
-              title="Shows only loaded entries that match. Applies after 3 characters or on Enter."
+              placeholder='error timeout · error || warn · "exact phrase"'
+              title="Shows only loaded entries that match. Space = all words, || = either side, &quot;quotes&quot; = exact phrase. Applies after 3 characters or on Enter."
               className={cn(
                 "flex-1 min-w-0 text-xs rounded border px-2.5 py-1 font-mono focus:outline-none focus:ring-2",
                 filterQuery.error
@@ -3488,7 +3487,8 @@ export function LogsExplorer({
                   if (e.shiftKey) goPrevMatch(); else goNextMatch();
                 }
               }}
-              placeholder='e.g.  error timeout  ·  error || warn  ·  "exact phrase"'
+              placeholder='error timeout · error || warn · "exact phrase"'
+              title="Space = all words, || = either side, &quot;quotes&quot; = exact phrase. Enter / Shift+Enter steps through matches."
               className={cn(
                 "flex-1 min-w-0 text-xs rounded border px-2.5 py-1 font-mono focus:outline-none focus:ring-2",
                 highlightQuery.error
@@ -4514,8 +4514,6 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
   // Stable tabs summary for child LogsExplorer tab-switcher UI
   const tabsSummary = useMemo(() => tabs.map((t) => ({ id: t.id, label: t.label })), [tabs]);
 
-  const selectedEnv = environments.find((e) => e.name === cfg?.env);
-
   if (!mounted) {
     return <div className="h-64 flex items-center justify-center text-sm text-slate-400">Loading…</div>;
   }
@@ -4535,7 +4533,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                     value={cfg.env}
                     onChange={(e) => updateActiveConfig({ env: e.target.value, tailing: false })}
                     disabled={cfg.loading || cfg.tailing}
-                    className="block px-3 py-2.5 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 bg-white"
+                    className="block h-9 px-3 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 bg-white"
                   >
                     {environments.map((e) => (
                       <option key={e.name} value={e.name} disabled={!e.hasLogApi}>
@@ -4547,7 +4545,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
 
                 <div className="space-y-1">
                   <label className="label-xs">Log Source</label>
-                  <div className="flex gap-3 py-1">
+                  <div className="flex items-center gap-3 h-9">
                     {LOG_SOURCES.map((s) => (
                       <label key={s} className={cn("flex items-center gap-1.5 text-sm cursor-pointer select-none", (cfg.loading || cfg.tailing) ? "opacity-50 cursor-not-allowed" : "")}>
                         <input
@@ -4573,7 +4571,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                   <select
                     value={cfg.levelFilter}
                     onChange={(e) => updateActiveConfig({ levelFilter: e.target.value })}
-                    className="block px-3 py-2.5 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                    className="block h-9 px-3 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
                   >
                     {LEVEL_FILTERS.map((l) => (
                       <option key={l.value} value={l.value}>{l.label}</option>
@@ -4586,7 +4584,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                   <select
                     value={tzMode}
                     onChange={(e) => setTzMode(e.target.value as TzMode)}
-                    className="block px-3 py-2.5 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                    className="block h-9 px-3 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
                   >
                     {TZ_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -4599,7 +4597,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                   <select
                     value={tailBufferMax}
                     onChange={(e) => setTailBufferMax(Number(e.target.value))}
-                    className="block px-3 py-2.5 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                    className="block h-9 px-3 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
                   >
                     {TAIL_BUFFER_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -4612,7 +4610,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                   <select
                     value={cfg.tailSecs}
                     onChange={(e) => updateActiveConfig({ tailSecs: Number(e.target.value) as TailSecs })}
-                    className="block px-3 py-2.5 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                    className="block h-9 px-3 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
                   >
                     {TAIL_SECS_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -4620,11 +4618,6 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                   </select>
                 </div>
 
-                {selectedEnv && (
-                  <div className="pb-0.5">
-                    <EnvironmentBadge env={selectedEnv} />
-                  </div>
-                )}
               </div>
             </div>
           )}
