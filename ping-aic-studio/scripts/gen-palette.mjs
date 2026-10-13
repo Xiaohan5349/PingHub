@@ -29,7 +29,7 @@ const TILE_DARK = "#1d1f25"; // dark-theme tile: graphite, not near-black
 
 // family -> [light 500, light 600, light 700, dark accent]
 const ACCENTS = {
-  blue: ["#4a7bf0", "#2c5bd0", "#2148ad", "#6b97ff"],
+  blue: ["#4a7bf0", "#2c5bd0", "#2148ad", "#4c9aff"],
   violet: ["#8a63e0", "#6a3fc8", "#55309f", "#b9a3ff"],
   teal: ["#14a38d", "#0b7666", "#08594d", "#3cc8b4"],
   cyan: ["#1aa3c4", "#0b7891", "#095e72", "#4cc3dc"],

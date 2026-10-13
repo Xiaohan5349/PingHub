@@ -25,7 +25,7 @@ function timeAgo(dateStr: string): string {
   if (h < 24) return `${h}h ago`;
   const d = Math.floor(h / 24);
   if (d < 30) return `${d}d ago`;
-  return new Date(dateStr).toLocaleDateString();
+  return new Date(dateStr).toLocaleDateString("en-US");
 }
 
 const STALE_PULL_MS = 6 * 60 * 60 * 1000; // 6 hours
@@ -883,10 +883,10 @@ function ArchiveTable({ tasks, environments, onRestore }: { tasks: PromotionTask
                     </span>
                   </td>
                   <td className="px-4 py-2.5 text-xs text-slate-500">
-                    {task.promotedAt ? new Date(task.promotedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {task.promotedAt ? new Date(task.promotedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                   </td>
                   <td className="px-4 py-2.5 text-xs text-slate-500">
-                    {task.completedAt ? new Date(task.completedAt).toLocaleDateString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
+                    {task.completedAt ? new Date(task.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }) : "—"}
                   </td>
                   <td className="px-4 py-2.5">
                     <div className="flex items-center gap-2">

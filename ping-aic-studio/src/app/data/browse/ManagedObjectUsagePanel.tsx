@@ -89,7 +89,7 @@ export function ManagedObjectUsagePanel({
       {data && (
         <>
           <p className="text-[10px] text-slate-500 mb-2">
-            Scanned {data.scanned.files.toLocaleString()} files · {data.hits.length} hits
+            Scanned {data.scanned.files.toLocaleString("en-US")} files · {data.hits.length} hits
           </p>
           {data.truncated && (
             <p className="text-xs text-amber-400 mb-2">

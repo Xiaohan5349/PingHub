@@ -239,7 +239,7 @@ export function TlsStatusView() {
                     {lastCheckedAt ? (
                         <>
                             Last checked{" "}
-                            <span title={new Date(lastCheckedAt).toLocaleString()}>{formatAgo(lastCheckedAt)}</span>
+                            <span title={new Date(lastCheckedAt).toLocaleString("en-US")}>{formatAgo(lastCheckedAt)}</span>
                         </>
                     ) : (
                         "No checks yet"
@@ -396,7 +396,7 @@ function TlsGroupBlock({ title, targets, results, running, onSelect, onRunOne }:
                                         {r ? `${r.host}:${r.port}` : "—"}
                                     </td>
                                     <td className="px-3 py-2 text-xs text-slate-600">
-                                        {r?.validTo ? new Date(r.validTo).toLocaleDateString() : "—"}
+                                        {r?.validTo ? new Date(r.validTo).toLocaleDateString("en-US") : "—"}
                                     </td>
                                     <td className="px-3 py-2 text-xs">
                                         {r?.daysRemaining === undefined ? (
@@ -422,7 +422,7 @@ function TlsGroupBlock({ title, targets, results, running, onSelect, onRunOne }:
                                     </td>
                                     <td className="px-3 py-2 text-xs text-slate-500">
                                         {r ? (
-                                            <span title={new Date(r.checkedAt).toLocaleString()}>
+                                            <span title={new Date(r.checkedAt).toLocaleString("en-US")}>
                                                 {formatAgo(r.checkedAt)}
                                             </span>
                                         ) : (
@@ -547,11 +547,11 @@ function DetailDrawer({
                 <Field label="Issuer" value={result.issuer ?? "—"} />
                 <Field
                     label="Valid from"
-                    value={result.validFrom ? new Date(result.validFrom).toLocaleString() : "—"}
+                    value={result.validFrom ? new Date(result.validFrom).toLocaleString("en-US") : "—"}
                 />
                 <Field
                     label="Valid to"
-                    value={result.validTo ? new Date(result.validTo).toLocaleString() : "—"}
+                    value={result.validTo ? new Date(result.validTo).toLocaleString("en-US") : "—"}
                 />
                 <Field
                     label="Days remaining"
@@ -570,7 +570,7 @@ function DetailDrawer({
                 {result.error && <Field label="Error" value={result.error} />}
                 <Field
                     label="Checked at"
-                    value={new Date(result.checkedAt).toLocaleString()}
+                    value={new Date(result.checkedAt).toLocaleString("en-US")}
                 />
             </div>
         </div>

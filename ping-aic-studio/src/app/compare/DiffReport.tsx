@@ -687,17 +687,14 @@ function FileRow({ file, sourceLabel, targetLabel, extraActions, checked, onTogg
             </span>
           )}
           <div
-            className="flex items-center rounded border border-slate-600 overflow-hidden text-[10px] shrink-0"
+            className="seg-sm"
           >
             {(["diff", "files"] as ViewMode[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setView(m)}
                 disabled={m === "files" && !hasContent}
-                className={cn(
-                  "px-2 py-0.5 capitalize transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
-                  view === m ? "bg-sky-600 text-white" : "text-slate-400 hover:bg-slate-800"
-                )}
+                className={cn("seg-sm-item capitalize", view === m && "seg-sm-item-active")}
               >
                 {m}
               </button>
@@ -707,10 +704,7 @@ function FileRow({ file, sourceLabel, targetLabel, extraActions, checked, onTogg
             type="button"
             onClick={() => setWrap((w) => !w)}
             title="Toggle line wrap"
-            className={cn(
-              "px-2 py-0.5 text-[10px] rounded border transition-colors shrink-0",
-              wrap ? "bg-sky-600 text-white border-sky-600" : "text-slate-400 border-slate-600 hover:bg-slate-800"
-            )}
+            className={cn("toggle-chip", wrap && "toggle-chip-on")}
           >
             Wrap
           </button>
@@ -718,10 +712,7 @@ function FileRow({ file, sourceLabel, targetLabel, extraActions, checked, onTogg
             type="button"
             onClick={() => setFormat((f) => !f)}
             title="Auto-format content (JSON / JS / Groovy)"
-            className={cn(
-              "px-2 py-0.5 text-[10px] rounded border transition-colors shrink-0",
-              format ? "bg-sky-600 text-white border-sky-600" : "text-slate-400 border-slate-600 hover:bg-slate-800"
-            )}
+            className={cn("toggle-chip", format && "toggle-chip-on")}
           >
             Format
           </button>
@@ -810,16 +801,13 @@ function FileRow({ file, sourceLabel, targetLabel, extraActions, checked, onTogg
 
         {open && (
           <div className="flex items-center gap-1.5 shrink-0" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center rounded border border-slate-300 overflow-hidden text-[10px]">
+            <div className="seg-sm">
               {(["diff", "files"] as ViewMode[]).map((m) => (
                 <button
                   key={m}
                   onClick={() => setView(m)}
                   disabled={m === "files" && !hasContent}
-                  className={cn(
-                    "px-2 py-0.5 capitalize transition-colors disabled:opacity-30 disabled:cursor-not-allowed",
-                    view === m ? "bg-sky-600 text-white" : "text-slate-500 hover:bg-slate-100"
-                  )}
+                  className={cn("seg-sm-item capitalize", view === m && "seg-sm-item-active")}
                 >
                   {m}
                 </button>
@@ -3359,7 +3347,7 @@ export function DiffReport({ report, tasks = [], mode = "compare", dryRunMode, s
               <span className="mx-1.5 text-slate-400">→</span>
               <span className="">{targetLabel}</span>
             </h2>
-            <span className="text-xs text-slate-400">{new Date(report.generatedAt).toLocaleString()}</span>
+            <span className="text-xs text-slate-400">{new Date(report.generatedAt).toLocaleString("en-US")}</span>
           </div>
 
           {/* Stats cards */}

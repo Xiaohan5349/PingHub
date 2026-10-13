@@ -6,7 +6,7 @@
  *   { type: "fetch-pause" }
  *   { type: "fetch-resume" }
  *   { type: "fetch-stop" }
- *   { type: "tail-start", env, sources, tailSecs, levels? }
+ *   { type: "tail-start", env, sources, tailSecs, levels?, queryFilter? }
  *   { type: "tail-stop" }
  *   { type: "set-rate-limit-delay", value }   // ms; clamped to [200, 5000]
  *   { type: "get-rate-limit-delay" }
@@ -286,7 +286,7 @@ function tailSleep(source, ms) {
  * tick wakes up after a stop/restart, it observes the mismatch and returns
  * without firing more requests or scheduling another tick.
  */
-async function doTailTick(env, source, levels, tailSecs, gen) {
+async function doTailTick(env, source, levels, queryFilter, tailSecs, gen) {
   if (tailGen.get(source) !== gen) return;
   let pageCount = 0;
   try {
@@ -299,7 +299,7 @@ async function doTailTick(env, source, levels, tailSecs, gen) {
         if (tailGen.get(source) !== gen) return;
       }
       const data = await apiPost(
-        { env, source, tail: true, cookie, ...(levels && levels.length ? { levels } : {}) },
+        { env, source, tail: true, cookie, ...(queryFilter ? { queryFilter } : {}), ...(levels && levels.length ? { levels } : {}) },
         MAX_RETRIES,
       );
       if (tailGen.get(source) !== gen) return;
@@ -331,7 +331,7 @@ async function doTailTick(env, source, levels, tailSecs, gen) {
 
   if (tailGen.get(source) !== gen) return;
   // Schedule the next tick AFTER drain finishes — guarantees no overlap.
-  const id = setTimeout(() => doTailTick(env, source, levels, tailSecs, gen), tailSecs * 1000);
+  const id = setTimeout(() => doTailTick(env, source, levels, queryFilter, tailSecs, gen), tailSecs * 1000);
   tailTimers.set(source, id);
 }
 
@@ -403,14 +403,15 @@ self.onmessage = async function (e) {
       }
       const tailLevels = Array.isArray(msg.levels) && msg.levels.length > 0 ? msg.levels : null;
       const tailSecs = Math.max(1, Number(msg.tailSecs) || 5);
-      console.log("[log-worker] tail-start", { env: msg.env, sources: tailSources, tailSecs, levels: tailLevels });
+      const tailQueryFilter = typeof msg.queryFilter === "string" && msg.queryFilter.trim() ? msg.queryFilter.trim() : null;
+      console.log("[log-worker] tail-start", { env: msg.env, sources: tailSources, tailSecs, levels: tailLevels, queryFilter: tailQueryFilter });
       // Kick off the first tick for each source immediately. Each tick
       // self-reschedules via setTimeout when its drain finishes.
       for (const src of tailSources) {
         const gen = (tailGen.get(src) ?? 0) + 1;
         tailGen.set(src, gen);
         // Fire-and-forget; doTailTick handles its own errors and rescheduling.
-        doTailTick(msg.env, src, tailLevels, tailSecs, gen);
+        doTailTick(msg.env, src, tailLevels, tailQueryFilter, tailSecs, gen);
       }
       break;
     }

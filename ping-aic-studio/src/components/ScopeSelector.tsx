@@ -103,17 +103,14 @@ export function ScopeSelector({ selected, onChange, disabled, action }: ScopeSel
       <div className="flex items-center gap-2">
         <span className="text-sm font-medium text-slate-700">Config Scopes</span>
 
-        <div className="flex items-center rounded border border-slate-200 overflow-hidden text-xs">
+        <div className="seg-sm">
           {(["basic", "advanced"] as Mode[]).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => setMode(m)}
               disabled={disabled}
-              className={cn(
-                "px-2 py-0.5 transition-colors capitalize disabled:opacity-40",
-                mode === m ? "bg-sky-600 text-white" : "text-slate-500 hover:bg-slate-100"
-              )}
+              className={cn("seg-sm-item capitalize", mode === m && "seg-sm-item-active")}
             >
               {m}
             </button>
@@ -190,10 +187,10 @@ export function ScopeSelector({ selected, onChange, disabled, action }: ScopeSel
                 className={cn(
                   "inline-flex items-center gap-1.5 transition-colors select-none disabled:opacity-40",
                   allGroupSelected
-                    ? "px-2.5 py-1 text-[11px] rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 cursor-pointer"
+                    ? "px-2.5 py-1 text-xs rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 cursor-pointer"
                     : someGroupSelected
-                    ? "px-2.5 py-1 text-[11px] rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 cursor-pointer"
-                    : "px-2.5 py-1 text-[11px] rounded-full bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100 cursor-pointer"
+                    ? "px-2.5 py-1 text-xs rounded-full bg-indigo-50 text-indigo-700 ring-1 ring-indigo-100 cursor-pointer"
+                    : "px-2.5 py-1 text-xs rounded-full bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100 cursor-pointer"
                 )}
               >
                 {groupName}

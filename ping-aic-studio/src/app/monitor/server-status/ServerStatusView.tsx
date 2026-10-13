@@ -238,7 +238,7 @@ export function ServerStatusView() {
                 <span className="text-xs text-slate-500">
                     {lastCheckedAt ? (
                         <>
-                            Last checked <span title={new Date(lastCheckedAt).toLocaleString()}>{formatAgo(lastCheckedAt)}</span>
+                            Last checked <span title={new Date(lastCheckedAt).toLocaleString("en-US")}>{formatAgo(lastCheckedAt)}</span>
                         </>
                     ) : (
                         "No checks yet"
@@ -475,7 +475,7 @@ function DetailDrawer({
                             <Field label="HTTP status">{result.httpStatus ?? "—"}</Field>
                             <Field label="Latency">{result.latencyMs}ms</Field>
                             <Field label="Checked">
-                                {new Date(result.checkedAt).toLocaleString()}
+                                {new Date(result.checkedAt).toLocaleString("en-US")}
                             </Field>
                             {result.error && <Field label="Error">{result.error}</Field>}
                             {result.bodySnippet && (

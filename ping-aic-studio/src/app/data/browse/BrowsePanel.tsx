@@ -210,7 +210,7 @@ export function BrowsePanel({ environments }: { environments: Environment[] }) {
           <label className="text-xs text-slate-500 font-medium">
             Environment
             {envLastPulledAt && (
-              <span className="ml-2 text-slate-400 font-normal" title={new Date(envLastPulledAt).toLocaleString()}>
+              <span className="ml-2 text-slate-400 font-normal" title={new Date(envLastPulledAt).toLocaleString("en-US")}>
                 · last pulled {timeAgoShort(envLastPulledAt)}
               </span>
             )}
@@ -338,7 +338,7 @@ export function BrowsePanel({ environments }: { environments: Environment[] }) {
                   className={cn(
                     "px-3 py-1 text-xs rounded transition-colors",
                     selectedType === t.name
-                      ? "bg-sky-600 text-white"
+                      ? "bg-accent-weak text-accent font-medium"
                       : "bg-slate-100 text-slate-700 hover:bg-slate-200",
                   )}
                 >

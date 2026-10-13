@@ -1749,19 +1749,13 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
         </div>
 
         {/* Display view toggle */}
-        <div className="flex rounded border border-slate-300 overflow-hidden text-[11px] shrink-0">
-          {(["graph", "outline", "table", "swimlane", "json"] as const).map((v, i) => (
+        <div className="seg-sm">
+          {(["graph", "outline", "table", "swimlane", "json"] as const).map((v) => (
             <button
               key={v}
               type="button"
               onClick={() => setDisplayView(v)}
-              className={cn(
-                "px-2.5 py-1 transition-colors",
-                i > 0 && "border-l border-slate-300",
-                displayView === v
-                  ? "bg-sky-600 text-white"
-                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-100",
-              )}
+              className={cn("seg-sm-item", displayView === v && "seg-sm-item-active")}
             >
               {v === "swimlane" ? "Swim" : v.charAt(0).toUpperCase() + v.slice(1)}
             </button>
@@ -1771,7 +1765,7 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
         {/* Graph-only controls */}
         {displayView === "graph" && (<>
           {/* Trace mode toggle */}
-          <div className="flex rounded border border-slate-200 overflow-hidden text-[11px] shrink-0">
+          <div className="seg-sm">
             {(["neighbors", "upstream", "downstream", "data"] as const).map((m) => {
               const label = m === "neighbors"
                 ? "Neighbors"
@@ -1791,10 +1785,7 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
                   type="button"
                   onClick={() => setTraceMode(m)}
                   title={title}
-                  className={cn(
-                    "px-2 py-1 transition-colors",
-                    traceMode === m ? "bg-sky-600 text-white" : "text-slate-500 hover:bg-slate-100",
-                  )}
+                  className={cn("seg-sm-item", traceMode === m && "seg-sm-item-active")}
                 >
                   {label}
                 </button>
@@ -1823,12 +1814,7 @@ function JourneyGraphInner({ json, fitViewKey, environment, journeyId, focusNode
                 ? "Showing only nodes reachable from Start. Click to show every node, including orphans."
                 : "Hide nodes that have no inbound path from Start (these never execute at runtime)."
             }
-            className={cn(
-              "px-2.5 py-1 text-[11px] rounded border transition-colors shrink-0 flex items-center gap-1",
-              hideUnreachable
-                ? "bg-sky-600 text-white border-sky-600"
-                : "text-slate-500 border-slate-300 hover:text-slate-700 hover:border-slate-400",
-            )}
+            className={cn("toggle-chip gap-1", hideUnreachable && "toggle-chip-on")}
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round"

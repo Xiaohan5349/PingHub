@@ -23,7 +23,7 @@ export type SlotRef =
 export function slotLabel(slot: SlotRef, defaultEnv?: string): string {
     const envPart = slot.env && slot.env !== defaultEnv ? `${slot.env} · ` : "";
     if (slot.kind === "working") return `${envPart}Working tree (current)`;
-    return `${envPart}${slot.shortSha} · ${new Date(slot.isoDate).toLocaleString()}`;
+    return `${envPart}${slot.shortSha} · ${new Date(slot.isoDate).toLocaleString("en-US")}`;
 }
 
 export interface VersionPickerProps {
@@ -175,7 +175,7 @@ export function useVersionPicker({
                 setVersionContent(`// Failed to load version: ${result.error}`);
             } else if (!result.exists) {
                 setVersionContent(
-                    `// File did not exist at commit ${entry.shortSha} (${new Date(entry.isoDate).toLocaleString()}).`,
+                    `// File did not exist at commit ${entry.shortSha} (${new Date(entry.isoDate).toLocaleString("en-US")}).`,
                 );
             } else {
                 setVersionContent(result.content);
@@ -493,7 +493,7 @@ export function useVersionPicker({
             </svg>
             <span>
                 Viewing version <span className="font-mono">{viewingShortSha}</span>
-                {viewingDate && <> from {new Date(viewingDate).toLocaleString()}</>}
+                {viewingDate && <> from {new Date(viewingDate).toLocaleString("en-US")}</>}
             </span>
             <button
                 type="button"
@@ -601,7 +601,7 @@ function renderHistoryRows({ entries, loading, error, isDark, activeSha, onPick,
                     </span>
                     <span className={cn("font-mono", isDark ? "text-slate-400" : "text-slate-600")}>{entry.shortSha}</span>
                     <span className={cn(isDark ? "text-slate-500" : "text-slate-400")}>·</span>
-                    <span className={cn(isDark ? "text-slate-400" : "text-slate-600")}>{new Date(entry.isoDate).toLocaleString()}</span>
+                    <span className={cn(isDark ? "text-slate-400" : "text-slate-600")}>{new Date(entry.isoDate).toLocaleString("en-US")}</span>
                     {isActive && <span className={cn("ml-auto text-[10px]", isDark ? "text-amber-300" : "text-amber-700")}>● viewing</span>}
                     {!isActive && inOther && otherSlotLabel && (
                         <span className={cn("ml-auto text-[10px]", isDark ? "text-amber-300" : "text-amber-700")}>in {otherSlotLabel}</span>

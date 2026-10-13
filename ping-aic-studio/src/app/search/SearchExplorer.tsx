@@ -415,7 +415,7 @@ export function SearchExplorer({ environments }: Props) {
       {data && !error && (
         <div className="flex items-center gap-3 text-xs text-slate-500">
           <span>
-            {totalHits.toLocaleString()} match{totalHits === 1 ? "" : "es"} in {totalFiles.toLocaleString()} file{totalFiles === 1 ? "" : "s"}
+            {totalHits.toLocaleString("en-US")} match{totalHits === 1 ? "" : "es"} in {totalFiles.toLocaleString("en-US")} file{totalFiles === 1 ? "" : "s"}
           </span>
           {data.truncated && <span className="text-amber-600">· results truncated</span>}
         </div>

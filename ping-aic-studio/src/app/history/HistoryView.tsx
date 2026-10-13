@@ -8,7 +8,7 @@ import { ActivityRow } from "@/components/ActivityRow";
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatTimestamp(iso: string): string {
-  return new Date(iso).toLocaleString(undefined, {
+  return new Date(iso).toLocaleString("en-US", {
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -42,7 +42,7 @@ function groupByDay(records: HistoryRecord[]): { label: string; records: History
     } else if (d.getTime() === yesterday.getTime()) {
       label = "Yesterday";
     } else {
-      label = new Date(r.completedAt).toLocaleDateString(undefined, {
+      label = new Date(r.completedAt).toLocaleDateString("en-US", {
         month: "long",
         day: "numeric",
         year: d.getFullYear() !== today.getFullYear() ? "numeric" : undefined,
@@ -191,7 +191,7 @@ function RecordDrawer({
             {record.logEntryCount != null && (
               <>
                 <dt className="text-slate-400 text-xs pt-0.5">Log Entries</dt>
-                <dd className="text-xs text-slate-700">{record.logEntryCount.toLocaleString()}</dd>
+                <dd className="text-xs text-slate-700">{record.logEntryCount.toLocaleString("en-US")}</dd>
               </>
             )}
           </dl>

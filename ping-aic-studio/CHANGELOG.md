@@ -7,16 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Logs: build the queryFilter from log fields.** Expanded table rows list the payload as fields; click a field name or value (or select part of a text value) to build a clause with `!`, the field path (editable), an operator (`eq`, `co`, `sw`, `pr`, and `gt`/`ge`/`lt`/`le` for numbers) and an `and`/`or` join, then add it to the queryFilter box. Operators that do not fit the value type are shown struck through. Raw shows the JSON as before.
+
+- **Logs: type or paste a timestamp for the custom time range.** A `Pick | Text` switch sits next to the range. Text takes a log timestamp such as `2026-10-13T02:08:30.383Z` (or epoch seconds/milliseconds) and reads it in the current time zone; the start rounds down and the end rounds up to the second so that entry stays in range.
+
 ### Changed
 
-- **New look: Bento theme with light and dark modes.** Follows the OS setting by default; the header toggle switches and remembers the choice. Light uses warm paper tones, dark uses graphite; code, log, diff and graph panes follow the theme.
-- **Grouped navigation.** The 14 pages are grouped into Dashboard, Pipeline, Explore, Observe and Setup menus, with the current group's pages as a second row of tabs.
+- **Logs: queryFilter box replaces Keywords.** It is sent to AIC as-is as `_queryFilter` and now applies to Tail as well as Search (Enter or Clear restarts a running tail). Keywords guessed a filter that missed values outside `message` and `eventName` in JSON logs. Local search still uses the box as plain text.
+
+- **Logs: the in-page Filter box is now "Search loaded".** It only narrows logs already on the page and never queries AIC; its placeholder and Highlight's now show plain examples instead of the operator shorthand.
+
+- **Logs: JSON view removed.** Table covers it: an expanded row shows the fields or the raw JSON, and Export still downloads everything as JSON. Tabs saved on JSON open in Table. Switching from Terminal to Table now expands the entry selected in Terminal.
+
+- **Logs: Auto-scroll is a Tail control.** The toggle only shows while in Tail; Search and Transaction results always follow the newest page as it loads, pausing when you scroll away or click an entry.
+
+- **New look: Bento theme with light and dark modes.** Follows the OS setting by default; the header toggle switches and remembers the choice. Light uses warm paper tones with a royal-blue accent, dark uses graphite with a brighter azure accent; code, log, diff and graph panes follow the theme.
+- **Grouped navigation.** The 14 pages are grouped into Dashboard, Pipeline, Explore, Observe and Setup menus, with the current group's pages as a second row of underline tabs; the current group itself is tinted in the accent colour so the two levels stay distinct.
 - **Dashboard tiles.** Pipeline order with tenant health, the most urgent upcoming AIC upgrade, and a tile per environment.
 - Consistent segmented controls and toggles across pages; dialogs and drawers share the tile style; system fonts replace the downloaded web fonts; monospace is kept for data such as ids, paths and logs.
 
 ### Fixed
 
 - The data pull API route no longer re-exports a helper, which failed the route type check in webpack production builds.
+- Open dropdown lists (time range, page size, …) are readable in the dark theme; their options now use the theme's tile and text colours.
+- The Logs toolbar (mode, queryFilter, filter builder, Search loaded, view) stays pinned under the header when the page scrolls.
+- One selection style per control type across the app: one-of-N choices (Local/Remote, Basic/Advanced, Diff/Files, graph views, …) use the neutral segmented control, on/off toggles (Wrap, Format, Hide unchanged, Compact, …) use the toggle chip, and a selected list item gets the accent tint. Solid accent is left to primary actions.
+- Disabled primary buttons (Compare, Pull, Check all, …) show as neutral grey instead of a faded or unreadable accent.
+- Dates and numbers are formatted in English regardless of the browser language, matching the rest of the UI.
+- Dense toolbar toggles and scope chips use 12px text instead of 11px.
+- Logs: the settings row lines up (equal control heights, no duplicate environment badge), and the Search loaded / Highlight placeholders no longer get cut off.
 
 ## [0.4.0] - 2026-06-11
 

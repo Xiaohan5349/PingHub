@@ -1314,7 +1314,7 @@ export function SettingsForm({ initialSettings, targetDirAbsolute, initialHasGit
                           <span className="text-slate-900 font-medium truncate">{c.subject}</span>
                         </div>
                         <div className="text-[11px] text-slate-500 mt-0.5">
-                          {c.authorName} · {new Date(c.timestamp).toLocaleString()}
+                          {c.authorName} · {new Date(c.timestamp).toLocaleString("en-US")}
                         </div>
                       </li>
                     ))}

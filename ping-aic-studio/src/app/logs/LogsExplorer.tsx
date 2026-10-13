@@ -4,11 +4,12 @@ import { useState, useEffect, useLayoutEffect, useRef, Fragment, startTransition
 import { createPortal } from "react-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Environment } from "@/lib/fr-config-types";
-import { EnvironmentBadge } from "@/components/EnvironmentBadge";
 import { useDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { logEntryMatchKey } from "@/lib/log-match-navigation";
 import { parseQuery } from "@/lib/log-query";
+import { parsePastedTimestamp } from "@/lib/log-time-paste";
+import { appendClause, buildClause, flattenPayload, operatorsFor, type FilterOp, type PayloadField } from "@/lib/log-filter-builder";
 import { useBusyState } from "@/hooks/useBusyState";
 import { DEFAULT_LOG_SOURCES } from "@/lib/logs/log-sources";
 
@@ -42,30 +43,6 @@ const TailBufferContext = createContext<number>(TAIL_BUFFER_DEFAULT);
 
 interface EnvWithLogApi extends Environment {
   hasLogApi: boolean;
-}
-
-/**
- * Pre-process the Search keywords box before passing to parseQuery.
- *
- * The boolean parser treats whitespace between barewords as implicit AND,
- * which is the right default for the Filter and Highlight boxes. For the
- * Search keywords box, however, users typically paste a phrase (e.g. an
- * error message or audit description) and expect it to match as-is. To make
- * that work without forcing them to add quotes, when the input contains no
- * boolean operators (`&&`, `||`, `,`), parens, or quotes, we wrap it as a
- * single quoted phrase so the parser sees one literal TERM.
- */
-function normalizeSearchKeywords(raw: string): string {
-  const trimmed = raw.trim();
-  if (!trimmed) return trimmed;
-  const hasOperator =
-    trimmed.includes("&&") ||
-    trimmed.includes("||") ||
-    /[,()"]/.test(trimmed);
-  if (hasOperator) return trimmed;
-  // Bareword phrase: escape backslashes (no quotes possible because of the
-  // regex above) and wrap in double quotes.
-  return `"${trimmed.replace(/\\/g, "\\\\")}"`;
 }
 
 interface LogEntry {
@@ -249,7 +226,7 @@ export interface TabConfig {
   /** Incremented to trigger a transaction trace fetch. */
   txSeq?: number;
   // View prefs (persisted per tab)
-  viewMode?: "terminal" | "table" | "json";
+  viewMode?: "terminal" | "table" | "json"; // "json": removed view, may still be saved; read as table
   /** @deprecated — use viewMode. Retained so old persisted tabs still open on the right view. */
   terminalView?: boolean;
   wrapLines?: boolean;
@@ -465,8 +442,8 @@ function formatTs(ts: string, tz: TzMode = "local"): { date: string; time: strin
       return { date: "", time: String(d.getTime()) };
     }
     const tzOpt: Intl.DateTimeFormatOptions["timeZone"] = tz === "utc" ? "UTC" : undefined;
-    const date = d.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: tzOpt });
-    const time = d.toLocaleTimeString(undefined, { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: tzOpt })
+    const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: tzOpt });
+    const time = d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: tzOpt })
       + "." + String(d.getMilliseconds()).padStart(3, "0")
       + (tz === "utc" ? "Z" : "");
     return { date, time };
@@ -536,14 +513,6 @@ function ResizableHeader({
   );
 }
 
-// ── JSON view ─────────────────────────────────────────────────────────────────
-// Pretty-printed JSON over all filtered entries, rendered with variable-height
-// virtualisation so only entries in (and just outside) the viewport pay the
-// `deepUnescapeJson` + `JSON.stringify` cost. Per-entry text is memoised by
-// entry reference so scrolling back doesn't re-stringify.
-const JSON_VIEW_OVERSCAN = 8;
-const JSON_VIEW_ROW_ESTIMATE = 240; // px; refined per-row by measureElement
-const JSON_COPY_CHUNK = 500;        // entries per yield when building Copy text
 /** Recursively unescape JSON-encoded string values within an object.
  *  Handles pure JSON strings and strings with a text prefix followed by
  *  embedded JSON (e.g. "SEVERE: [uuid] Content: {\"key\":\"val\"}").
@@ -713,959 +682,6 @@ function ScrollbarOverlay({ containerRef }: { containerRef: RefObject<HTMLElemen
   );
 }
 
-function JsonLogView({
-  entries,
-  wrapLines = false,
-  keywords = [],
-  searchTerm = "",
-  activeEntryIdx = -1,
-  matchIndices = [],
-  matchCase = false,
-  wholeWord = false,
-  onEntryClick,
-  contextAnchorIdx = -1,
-  selectedEntryIdx = null,
-  selectedScrollRequest = null,
-  autoScroll = true,
-  evictedCount = 0,
-}: {
-  entries: LogEntry[];
-  wrapLines?: boolean;
-  keywords?: string[];
-  searchTerm?: string;
-  activeEntryIdx?: number;
-  matchIndices?: number[];
-  matchCase?: boolean;
-  wholeWord?: boolean;
-  onEntryClick?: (idx: number) => void;
-  contextAnchorIdx?: number;
-  /** Entry index currently selected by user click (sky highlight, distinct from match-amber). */
-  selectedEntryIdx?: number | null;
-  /** Bumped to (re)scroll to selectedEntryIdx — e.g. on view-mode switch. */
-  selectedScrollRequest?: { index: number; nonce: number } | null;
-  /** When true and the user is pinned to the bottom, follow new entries on tail. */
-  autoScroll?: boolean;
-  /** Cumulative count of entries evicted from the front of the parent buffer. Used
-   *  to keep the viewport visually stable when autoScroll is off. */
-  evictedCount?: number;
-}) {
-  // Per-entry pretty-printed JSON, cached by entry reference so we never
-  // re-stringify the same entry twice (scrolling, re-renders, tail appends).
-  // WeakMap lets us forget entries that fall out of scope without bookkeeping.
-  const textCacheRef = useRef<WeakMap<object, string>>(new WeakMap());
-  const getEntryText = useCallback((entry: LogEntry): string => {
-    const cache = textCacheRef.current;
-    let t = cache.get(entry as unknown as object);
-    if (t === undefined) {
-      t = JSON.stringify(deepUnescapeJson(entry), null, 2);
-      cache.set(entry as unknown as object, t);
-    }
-    return t;
-  }, []);
-
-  // Copy is built incrementally on click so a 50k-entry buffer doesn't freeze
-  // the main thread for several seconds. Yields between chunks let the UI
-  // stay responsive and update the progress label.
-  const [copyState, setCopyState] = useState<{ phase: "idle" | "building" | "done"; pct: number }>({ phase: "idle", pct: 0 });
-  const copyAbortRef = useRef(false);
-  useEffect(() => () => { copyAbortRef.current = true; }, []);
-  const onCopy = useCallback(async () => {
-    if (copyState.phase === "building") return;
-    copyAbortRef.current = false;
-    const total = entries.length;
-    if (total === 0) {
-      try { await navigator.clipboard.writeText("[]"); } catch { /* ignore */ }
-      setCopyState({ phase: "done", pct: 100 });
-      setTimeout(() => setCopyState({ phase: "idle", pct: 0 }), 1500);
-      return;
-    }
-    setCopyState({ phase: "building", pct: 0 });
-    const parts: string[] = ["[\n"];
-    for (let i = 0; i < total; i += JSON_COPY_CHUNK) {
-      if (copyAbortRef.current) { setCopyState({ phase: "idle", pct: 0 }); return; }
-      const end = Math.min(i + JSON_COPY_CHUNK, total);
-      for (let j = i; j < end; j++) {
-        parts.push(getEntryText(entries[j]));
-        if (j < total - 1) parts.push(",\n"); else parts.push("\n");
-      }
-      setCopyState({ phase: "building", pct: Math.round((end / total) * 100) });
-      // Yield to the browser so the progress label updates and input stays live.
-      await new Promise((r) => setTimeout(r, 0));
-    }
-    parts.push("]");
-    try {
-      await navigator.clipboard.writeText(parts.join(""));
-      setCopyState({ phase: "done", pct: 100 });
-      setTimeout(() => setCopyState({ phase: "idle", pct: 0 }), 1500);
-    } catch {
-      setCopyState({ phase: "idle", pct: 0 });
-    }
-  }, [entries, getEntryText, copyState.phase]);
-
-  // Build highlight regex once
-  const allTerms = [searchTerm, ...keywords].filter(Boolean);
-  const [hlRegex, hlTestRe] = useMemo(() => {
-    if (allTerms.length === 0) return [null, null] as const;
-    const escaped = allTerms.map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-    const wrapped = wholeWord ? escaped.map((k) => `\\b${k}\\b`) : escaped;
-    const flags = matchCase ? "g" : "gi";
-    return [
-      new RegExp(`(${wrapped.join("|")})`, flags),
-      new RegExp(`^(?:${wrapped.join("|")})$`, matchCase ? "" : "i"),
-    ] as const;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm, keywords, matchCase, wholeWord]);
-
-  const matchSet = useMemo(() => new Set(matchIndices), [matchIndices]);
-
-  function highlightText(str: string, isActiveEntry: boolean) {
-    if (!hlRegex || !hlTestRe) return <>{str}</>;
-    hlRegex.lastIndex = 0;
-    const parts = str.split(hlRegex);
-    if (parts.length === 1) return <>{str}</>;
-    return (
-      <>
-        {parts.map((part, i) =>
-          hlTestRe.test(part)
-            ? <mark key={i} className={isActiveEntry ? "bg-amber-400 text-black rounded-sm" : "bg-yellow-200 text-inherit rounded-sm"}>{part}</mark>
-            : part
-        )}
-      </>
-    );
-  }
-
-  // Variable-height virtualizer over the full entry list. Only rows in the
-  // viewport (+ overscan) are mounted, so cost is O(visible) regardless of
-  // total entry count.
-  //
-  // Scroll model: CUSTOM. We hide the native scrollbar (overflow: hidden) and
-  // drive react-virtual via an internal `virtualOffset` state. A custom thumb
-  // widget on the right edge handles pointer drag, the wheel handler adds
-  // deltaY directly to the offset, and keyboard nav (PgUp/PgDn/Home/End)
-  // pages through the offset. This avoids browser scrollbar pathologies at
-  // very large `scrollHeight` (sub-pixel thumb, non-linear drag, scrollTop
-  // precision loss) — everything is in our coordinate space.
-  const scrollRef = useRef<HTMLDivElement | null>(null);
-  // Initial virtualOffset: when mounted with a pending scroll target (e.g.
-  // user clicked a highlighted row in terminal view then switched to JSON),
-  // pre-position the offset so the first paint already shows the target row
-  // roughly centered. Without this, the view paints at offset 0 first
-  // (highlight off-screen), then the rAF convergence loop scrolls down — a
-  // visible "bounce" where the highlight disappears and reappears.
-  const initialTargetIdx =
-    selectedScrollRequest?.index ??
-    (activeEntryIdx != null && activeEntryIdx >= 0 ? activeEntryIdx : null);
-  const computeInitialOffset = () => {
-    if (initialTargetIdx == null || initialTargetIdx < 0) return 0;
-    // Default viewport is 600 (matches viewportH initial). Estimate is
-    // intentionally rough — the rAF loop refines after first paint.
-    const rough = initialTargetIdx * JSON_VIEW_ROW_ESTIMATE - 300;
-    return Math.max(0, rough);
-  };
-  const [virtualOffset, setVirtualOffset] = useState(computeInitialOffset);
-  const virtualOffsetRef = useRef(virtualOffset);
-  const [viewportH, setViewportH] = useState(600);
-  // React-virtual's offset observer callback. We hold a ref so we can push
-  // updates whenever our internal offset changes.
-  const offsetCbRef = useRef<((offset: number, isScrolling: boolean) => void) | null>(null);
-  const isScrollingTimeoutRef = useRef<number | null>(null);
-  const applyVirtualOffset = useCallback((next: number) => {
-    // Clamp into the valid range. Without an upper clamp, programmatic scrolls
-    // computed from stale row-size estimates (e.g. scrollToIndex on first
-    // mount when avgRowHeightRef is still the initial guess) can land at an
-    // offset far beyond totalSize, translating the row layer entirely
-    // offscreen — the target row then never mounts, never gets measured, and
-    // retries can't converge. Upper clamp keeps offset within actual content.
-    const total = totalSizeRef.current;
-    const max = Math.max(0, total - viewportH);
-    const clamped = total > 0 ? Math.min(max, Math.max(0, next)) : Math.max(0, next);
-    if (typeof window !== "undefined" && (window as unknown as { __JSON_LOG_DEBUG?: boolean }).__JSON_LOG_DEBUG) {
-      const t = new Date().toISOString().slice(11, 23);
-      // eslint-disable-next-line no-console
-      console.log(`[JsonLogView ${t}] applyVirtualOffset`, { requested: next, clamped, prev: virtualOffsetRef.current, total, viewportH, max, atBottomRef: atBottomRef.current });
-    }
-    virtualOffsetRef.current = clamped;
-    setVirtualOffset(clamped);
-    // Notify react-virtual of the new offset. Deferred via microtask because
-    // react-virtual calls flushSync internally; calling synchronously from
-    // here can land during a render commit phase (e.g. when scrollToFn is
-    // invoked from an effect cascading off a render), which React forbids.
-    queueMicrotask(() => { offsetCbRef.current?.(clamped, true); });
-    if (isScrollingTimeoutRef.current) window.clearTimeout(isScrollingTimeoutRef.current);
-    isScrollingTimeoutRef.current = window.setTimeout(() => {
-      offsetCbRef.current?.(virtualOffsetRef.current, false);
-    }, 150);
-  }, [viewportH]);
-  // Per-index height cache + running average estimate. We sample each row's
-  // height the first time it mounts, then lock both the per-row cache and
-  // the estimate so subsequent renders cannot shift totalSize. This keeps
-  // the scrollbar thumb glued to the cursor through long drags.
-  //
-  // Without this, react-virtual will:
-  //   1. estimate every unmeasured row at a guess (e.g. 240px),
-  //   2. update size as each row mounts (delta = real - estimate),
-  //   3. update size *again* when row content changes (highlight rings
-  //      add 1-2px to height), which keeps shifting totalSize even when
-  //      the user has stopped tailing.
-  // The combined drift makes the scrollbar lag behind the cursor.
-  const ESTIMATE_LOCK_AFTER = 40;
-  const avgRowHeightRef = useRef(JSON_VIEW_ROW_ESTIMATE);
-  const measuredSumRef = useRef(0);
-  const estimateLockedRef = useRef(false);
-  // Per-index cached height; once an entry is measured once we keep that
-  // height forever (until wrap mode flips), even if the rendered row's
-  // actual height jitters by a few pixels due to highlight rings.
-  const heightCacheRef = useRef<Map<number, number>>(new Map());
-  const virtualizer = useVirtualizer({
-    count: entries.length,
-    getScrollElement: () => scrollRef.current,
-    estimateSize: () => avgRowHeightRef.current,
-    measureElement: (el) => {
-      const idxAttr = el.getAttribute("data-index");
-      const idx = idxAttr != null ? Number(idxAttr) : NaN;
-      const cache = heightCacheRef.current;
-      if (Number.isFinite(idx) && cache.has(idx)) {
-        // Stable: never let row content changes (rings, highlights) re-measure.
-        return cache.get(idx)!;
-      }
-      const h = el.getBoundingClientRect().height;
-      if (Number.isFinite(idx)) cache.set(idx, h);
-      if (!estimateLockedRef.current) {
-        measuredSumRef.current += h;
-        const n = cache.size;
-        if (n >= 5) {
-          avgRowHeightRef.current = measuredSumRef.current / n;
-        }
-        if (n >= ESTIMATE_LOCK_AFTER) {
-          estimateLockedRef.current = true;
-        }
-      }
-      return h;
-    },
-    overscan: JSON_VIEW_OVERSCAN,
-    // Feed react-virtual our internal offset instead of el.scrollTop.
-    observeElementOffset: (_inst, cb) => {
-      offsetCbRef.current = cb;
-      // Defer the initial push outside the virtualizer's commit phase
-      // (flushSync forbidden there).
-      queueMicrotask(() => { cb(virtualOffsetRef.current, false); });
-      return () => { offsetCbRef.current = null; };
-    },
-    // Programmatic scrolls (scrollToIndex) deliver a target offset; apply it
-    // to our state instead of el.scrollTop.
-    scrollToFn: (offset) => {
-      applyVirtualOffset(offset);
-    },
-  });
-
-  // Reset measurement samples + average when wrap mode changes (heights differ).
-  useEffect(() => {
-    heightCacheRef.current = new Map();
-    measuredSumRef.current = 0;
-    estimateLockedRef.current = false;
-    avgRowHeightRef.current = JSON_VIEW_ROW_ESTIMATE;
-    virtualizer.measure();
-  }, [wrapLines, virtualizer]);
-
-  // Track whether the user is pinned to the bottom of the JSON view. Auto-tail
-  // and eviction compensation behave differently depending on this.
-  //
-  // On initial mount, when there's a pending scroll-to-selection request
-  // (e.g. user clicked a row in another view then switched to JSON), start
-  // NOT at bottom — otherwise the auto-tail effect (which fires before our
-  // scroll-to-selection effect because it's declared first) would
-  // immediately yank the viewport to the end, fighting our convergence loop.
-  // On initial mount, when there's a pending scroll target (selection from
-  // another view, or an active match-cursor), start NOT at bottom — the
-  // scroll-to-target effect that follows would otherwise be undone by the
-  // auto-tail effect (which fires earlier in declaration order) on the very
-  // next tail batch.
-  const hasInitialTarget = selectedScrollRequest != null || (activeEntryIdx != null && activeEntryIdx >= 0);
-  const atBottomRef = useRef(!hasInitialTarget);
-  // Mirror atBottomRef into state so the floating "Jump to bottom" button
-  // can re-render when the user scrolls away (or programmatically pauses by
-  // clicking an entry / navigating to a match).
-  const [atBottom, setAtBottom] = useState(!hasInitialTarget);
-  // When mounting with a scroll-to-selection target, hide the inner content
-  // until PIN has anchored to the actual measured row. This avoids a
-  // wrong-content flash: react-virtual's first paint uses estimate-based
-  // row positions (e.g. 240 px each) but real entries can be 100x taller,
-  // so the user briefly sees an unrelated chunk of logs before the PIN
-  // re-anchors. Reveal once the selected row is measured AND the PIN has
-  // converged (delta <= 2). Failsafe: reveal after 500 ms regardless.
-  const [pinned, setPinned] = useState(!hasInitialTarget);
-  const pinnedRef = useRef(pinned);
-  pinnedRef.current = pinned;
-  // Tracks the PIN's last computed targetOffset. Reveal only when two
-  // consecutive PIN runs produce the same target (within 2 px). This means
-  // measurements have stopped shifting `rowStart` (the cumulative-sum from
-  // index 0 to selectedIdx) and the anchored offset is final — the user
-  // will see no further scroll motion after the loading overlay clears.
-  const lastPinTargetRef = useRef<number | null>(null);
-  // [DEBUG] gated logger; window.__JSON_LOG_DEBUG = true to enable.
-  const dbg = useCallback((tag: string, data?: Record<string, unknown>) => {
-    if (typeof window === "undefined" || !(window as unknown as { __JSON_LOG_DEBUG?: boolean }).__JSON_LOG_DEBUG) return;
-    const t = new Date().toISOString().slice(11, 23);
-    // eslint-disable-next-line no-console
-    console.log(`[JsonLogView ${t}] ${tag}`, data ?? "");
-  }, []);
-  // Helper: change atBottomRef + state with a log line indicating who and why.
-  const setAtBottomBoth = useCallback((next: boolean, reason: string) => {
-    if (atBottomRef.current === next) return;
-    dbg("atBottom flip", { from: atBottomRef.current, to: next, reason, virtualOffset: virtualOffsetRef.current, totalSize: totalSizeRef.current, viewportH });
-    atBottomRef.current = next;
-    setAtBottom(next);
-  }, [dbg, viewportH]);
-  // [DEBUG] log mount + initial state once.
-  useEffect(() => {
-    dbg("MOUNT", { entriesLen: entries.length, activeEntryIdx, selectedScrollRequest, autoScroll, atBottomInit: atBottomRef.current, hasInitialTarget });
-    return () => { dbg("UNMOUNT"); };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  // [DEBUG] log every prop change that could affect scroll behavior.
-  useEffect(() => {
-    dbg("props change", { entriesLen: entries.length, activeEntryIdx, selectedScrollRequest, selectedEntryIdx, autoScroll, atBottomRef: atBottomRef.current });
-  }, [entries.length, activeEntryIdx, selectedScrollRequest, selectedEntryIdx, autoScroll, dbg]);
-  // [DEBUG] track what the selected/active row's identity is on every entries
-  // change. If the entry at `selectedEntryIdx` swaps identity (timestamp /
-  // _id) when a tail batch arrives, that's a mid-array insert — rows after
-  // the insertion point shifted index, but the index ref stayed the same so
-  // the highlight is now on a different physical entry.
-  const prevSelectedEntryRef = useRef<{ idx: number; ts?: string; preview?: string } | null>(null);
-  useEffect(() => {
-    const idx = selectedEntryIdx ?? (activeEntryIdx >= 0 ? activeEntryIdx : -1);
-    if (idx < 0 || idx >= entries.length) {
-      if (prevSelectedEntryRef.current != null) {
-        dbg("selected-entry OOR", { idx, entriesLen: entries.length, prev: prevSelectedEntryRef.current });
-        prevSelectedEntryRef.current = null;
-      }
-      return;
-    }
-    const e = entries[idx] as unknown as { timestamp?: string; payload?: { message?: string }; _id?: string };
-    const ts = e?.timestamp;
-    const preview = (e?.payload?.message ?? "").toString().slice(0, 60);
-    const prev = prevSelectedEntryRef.current;
-    if (prev == null) {
-      dbg("selected-entry initial", { idx, ts, preview, entriesLen: entries.length });
-    } else if (prev.idx !== idx) {
-      dbg("selected-entry IDX CHANGED", { fromIdx: prev.idx, toIdx: idx, fromTs: prev.ts, toTs: ts });
-    } else if (prev.ts !== ts) {
-      // SAME idx, DIFFERENT entry → mid-array insert pushed the original row
-      // past idx, and idx now points to a different (later-inserted) entry.
-      dbg("selected-entry IDENTITY CHANGED (mid-insert?)", { idx, fromTs: prev.ts, toTs: ts, fromPreview: prev.preview, toPreview: preview, entriesLen: entries.length });
-    }
-    prevSelectedEntryRef.current = { idx, ts, preview };
-  }, [entries, selectedEntryIdx, activeEntryIdx, dbg]);
-  // [DEBUG] track entries.length deltas + first/last timestamp to detect
-  // out-of-order arrivals that would force a sort-and-reindex.
-  const prevEntriesMetaRef = useRef<{ len: number; firstTs?: string; lastTs?: string }>({ len: 0 });
-  useEffect(() => {
-    const len = entries.length;
-    const firstTs = (entries[0] as unknown as { timestamp?: string } | undefined)?.timestamp;
-    const lastTs = (entries[len - 1] as unknown as { timestamp?: string } | undefined)?.timestamp;
-    const prev = prevEntriesMetaRef.current;
-    if (prev.len !== len || prev.firstTs !== firstTs || prev.lastTs !== lastTs) {
-      dbg("entries meta", { len, delta: len - prev.len, firstTs, prevFirstTs: prev.firstTs, lastTs, prevLastTs: prev.lastTs, firstShifted: prev.firstTs != null && prev.firstTs !== firstTs });
-      prevEntriesMetaRef.current = { len, firstTs, lastTs };
-    }
-  }, [entries, dbg]);
-  // Total content size — refreshed each render via virtualizer.getTotalSize()
-  // below in JSX. We snapshot into a ref so handlers can read it.
-  const totalSizeRef = useRef(0);
-  // Forward-declared ref read by the auto-tail effect to skip yanking the
-  // viewport while a programmatic scroll-to-selection is being applied. The
-  // PIN useLayoutEffect (further below) is now synchronous and doesn't need
-  // to set this; kept as `false` so the SKIP branch below is dead code in
-  // the new design but harmless if older flows ever set it again.
-  const scrollLoopActiveRef = useRef(false);
-  const updateAtBottom = useCallback(() => {
-    // DEMOTE-only. Promotion to atBottom must come from explicit user actions
-    // (wheel/key/drag-to-bottom, jump-to-bottom button) via
-    // userScrollUpdateAtBottom() below. Programmatic scrolls (scroll-to-
-    // selection rAF loop, scroll-to-active-match) can legitimately land near
-    // the bottom while the user is inspecting a row — if updateAtBottom
-    // promoted atBottomRef back to true here, the next tail batch's auto-tail
-    // effect would yank the viewport to the end and the highlight would be
-    // gone. So we only allow this position check to clear atBottom; user
-    // input is the only re-engage path.
-    const total = totalSizeRef.current;
-    const max = Math.max(0, total - viewportH);
-    const atBot = max - virtualOffsetRef.current < 60;
-    if (!atBot && atBottomRef.current) {
-      setAtBottomBoth(false, "updateAtBottom demote (offset moved away from end)");
-    }
-  }, [viewportH, setAtBottomBoth]);
-
-  // Called from user input handlers (wheel, key, scrollbar) AFTER they
-  // applyVirtualOffset. Promotes atBottomRef back to true when the user
-  // explicitly scrolls all the way to the end — the only path that may
-  // re-engage auto-tail.
-  const userScrollUpdateAtBottom = useCallback(() => {
-    const total = totalSizeRef.current;
-    const max = Math.max(0, total - viewportH);
-    const atBot = max - virtualOffsetRef.current < 60;
-    if (atBot !== atBottomRef.current) {
-      setAtBottomBoth(atBot, `userScroll (atBot=${atBot}, gap=${max - virtualOffsetRef.current})`);
-    }
-  }, [viewportH, setAtBottomBoth]);
-
-  // Auto-tail: when pinned to bottom and autoScroll is on, follow new entries.
-  // Skipped while a scroll-to-selection loop is in flight so the two
-  // animations don't compete.
-  useEffect(() => {
-    dbg("auto-tail effect", { entriesLen: entries.length, autoScroll, atBottomRef: atBottomRef.current, scrollLoopActive: scrollLoopActiveRef.current, virtualOffset: virtualOffsetRef.current, totalSize: totalSizeRef.current, hasInitialTarget, pinned: pinnedRef.current });
-    if (!autoScroll || !atBottomRef.current) { dbg("auto-tail SKIP", { reason: !autoScroll ? "autoScroll off" : "not at bottom" }); return; }
-    if (entries.length === 0) { dbg("auto-tail SKIP", { reason: "empty" }); return; }
-    if (scrollLoopActiveRef.current) { dbg("auto-tail SKIP", { reason: "scroll loop active" }); return; }
-    // Skip while a scroll-to-selection request is pending. On view-mode
-    // switches (terminal → json) the parent bumps selectedScrollNonce in a
-    // useEffect that runs AFTER JsonLogView mounts. So at mount,
-    // selectedScrollRequest is still stale (null or with old nonce) and
-    // `atBottomRef` initializes to true via `useRef(!hasInitialTarget)`.
-    // Without this guard, the mount-phase auto-tail call jams the viewport
-    // to the end before PIN can scroll to the selected row.
-    if (hasInitialTarget && !pinnedRef.current) { dbg("auto-tail SKIP", { reason: "selection target pending" }); return; }
-    // Apply offset directly. virtualizer.scrollToIndex is broken in our
-    // setup (it calls scrollToFn(0) for any index because react-virtual's
-    // measurementsCache is empty for unmounted indices and our
-    // observeElementOffset reports virtualOffset=0). Total/viewportH math
-    // gives the same end-aligned offset without the broken indirection.
-    const endOffset = Math.max(0, totalSizeRef.current - viewportH);
-    dbg("auto-tail FIRE applyVirtualOffset(end)", { idx: entries.length - 1, endOffset });
-    applyVirtualOffset(endOffset);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entries.length, autoScroll, hasInitialTarget, pinned]);
-
-  // Stabilize viewport when buffer evicts from the front. Without this, every
-  // eviction shifts every row's index, so the same offset now reveals
-  // different content ("jiggle"). Compensate by subtracting the approximate
-  // height of evicted rows from the offset so the user's anchor stays put.
-  const prevEvictedRef = useRef(evictedCount);
-  useEffect(() => {
-    const delta = evictedCount - prevEvictedRef.current;
-    prevEvictedRef.current = evictedCount;
-    if (delta <= 0) return;
-    dbg("eviction", { delta, autoScroll, atBottomRef: atBottomRef.current, virtualOffset: virtualOffsetRef.current });
-    const cache = heightCacheRef.current;
-    if (cache.size > 0) {
-      const next = new Map<number, number>();
-      for (const [k, v] of cache) {
-        const shifted = k - delta;
-        if (shifted >= 0) next.set(shifted, v);
-      }
-      heightCacheRef.current = next;
-    }
-    if (autoScroll && atBottomRef.current) { dbg("eviction SKIP compensation (following tail)"); return; }
-    const newOffset = virtualOffsetRef.current - delta * avgRowHeightRef.current;
-    dbg("eviction COMPENSATE applyVirtualOffset", { from: virtualOffsetRef.current, to: newOffset, delta, avgRowH: avgRowHeightRef.current });
-    applyVirtualOffset(newOffset);
-  }, [evictedCount, autoScroll, entries.length, applyVirtualOffset, dbg])
-
-  // Scroll to the active match when it changes. Uses cumulative-sum
-  // estimate (same as PIN Phase 1) since virtualizer.scrollToIndex is
-  // broken in this setup.
-  useEffect(() => {
-    dbg("active-match effect", { activeEntryIdx, entriesLen: entries.length, atBottomRef: atBottomRef.current });
-    if (activeEntryIdx >= 0 && activeEntryIdx < entries.length) {
-      // Pause auto-tail — user is inspecting a match, so any subsequent tail
-      // batch must NOT yank the viewport to the end.
-      setAtBottomBoth(false, "scroll-to-active-match");
-      const cache = heightCacheRef.current;
-      const avg = avgRowHeightRef.current;
-      const viewport = scrollRef.current?.clientHeight || viewportH;
-      let rowStart = 0;
-      for (let i = 0; i < activeEntryIdx; i++) {
-        rowStart += cache.get(i) ?? avg;
-      }
-      const rowH = cache.get(activeEntryIdx) ?? avg;
-      const targetOffset = rowH > viewport
-        ? Math.max(0, rowStart - 24)
-        : Math.max(0, rowStart - viewport / 2 + rowH / 2);
-      dbg("active-match FIRE applyVirtualOffset(center)", { idx: activeEntryIdx, rowStart, rowH, targetOffset });
-      applyVirtualOffset(targetOffset);
-    }
-  }, [activeEntryIdx, entries.length, viewportH, applyVirtualOffset, dbg, setAtBottomBoth]);
-
-  // Scroll-to-selection: when a new selection request arrives (view-mode
-  // switch or jump-from-match-nav), pause auto-tail. The actual scrolling
-  // is handled by the start-anchored Selection PIN below, which computes
-  // the exact target offset from cumulative row heights and runs
-  // synchronously in a layout effect — no multi-frame convergence loop
-  // needed.
-  const selectedNonce = selectedScrollRequest?.nonce;
-  const selectedIdx = selectedScrollRequest?.index;
-  useEffect(() => {
-    if (selectedIdx == null || selectedIdx < 0) return;
-    if (atBottomRef.current) setAtBottomBoth(false, "scroll-to-selection request");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNonce]);
-
-  // Snapshot virtualizer measurements early so subsequent effects (the
-  // selection pin below, the layout/atBottom effect further down) can take
-  // them as deps. `getTotalSize()` is cheap and idempotent within a render.
-  const items = virtualizer.getVirtualItems();
-  const totalSize = virtualizer.getTotalSize();
-  totalSizeRef.current = totalSize;
-
-  // ── Selection PIN ──
-  // The rAF loop above converges to the target row using current row-height
-  // estimates. With huge entry counts, the avg row height estimate is still
-  // drifting after the loop terminates: as more rows get measured the
-  // estimate stabilizes and the cumulative offset of every row shifts. The
-  // target row's true pixel offset can move by hundreds of thousands of
-  // pixels between rAF convergence and steady state, leaving virtualOffset
-  // pointing at completely different content (highlight slides off-screen).
-  //
-  // The pin keeps the selected row near the viewport center as long as:
-  //  - the user has not interacted with the scroll surface (wheel / key /
-  //    scrollbar / jump-to-bottom) since the selection was made,
-  //  - the rAF convergence loop is not running (don't fight it), and
-  //  - the row's measured position has drifted more than 30px from center
-  //    (cheap no-op when stable; only writes offset when needed).
-  // If the row is no longer in the DOM (estimate drifted past the viewport
-  // entirely), do a proportional jump so the row mounts on the next render
-  // and the cheap measurement path takes over.
-  const userInteractedRef = useRef(false);
-  // Reset interaction flag when a new selection arrives.
-  useEffect(() => {
-    userInteractedRef.current = false;
-    // Reset stable-target tracker so the next PIN run starts a fresh
-    // two-run stability window before revealing.
-    lastPinTargetRef.current = null;
-    if (hasInitialTarget) setPinned(false);
-    dbg("PIN reset (new selection)", { selectedNonce });
-  }, [selectedNonce, hasInitialTarget, dbg]);
-  // Failsafe reveal: if PIN hasn't converged within 700 ms (e.g. selected
-  // row never mounts because index is past end of buffer, or the cumulative-
-  // sum target keeps oscillating because new measurements keep arriving),
-  // do ONE final cumulative-sum correction with whatever is currently in the
-  // height cache, apply that offset, then reveal so the user isn't stuck on
-  // the spinner. Keyed by selectedNonce so each Scroll-to-selected click
-  // gets its own deterministic timer that can't be starved by re-renders.
-  useEffect(() => {
-    if (!hasInitialTarget) return;
-    const t = setTimeout(() => {
-      if (pinnedRef.current) return;
-      // Final corrective scroll using current measurements. Prefer the
-      // DOM-rect path (stable under measurement updates) over the
-      // cumulative-sum path (drifts as nearby rows get measured).
-      if (
-        selectedIdx != null &&
-        selectedIdx >= 0 &&
-        selectedIdx < entries.length &&
-        scrollRef.current
-      ) {
-        const scrollEl = scrollRef.current;
-        const viewport = scrollEl.clientHeight || viewportH;
-        const rowEl = scrollEl.querySelector(
-          `[data-index="${selectedIdx}"]`,
-        ) as HTMLElement | null;
-        if (rowEl) {
-          const scrollRect = scrollEl.getBoundingClientRect();
-          const rowRect = rowEl.getBoundingClientRect();
-          const currentTop = rowRect.top - scrollRect.top;
-          const rowH = rowRect.height;
-          const desiredTop = rowH > viewport ? 24 : (viewport - rowH) / 2;
-          const delta = currentTop - desiredTop;
-          const newOffset = Math.max(0, virtualOffsetRef.current + delta);
-          if (Math.abs(delta) > 2) {
-            dbg("PIN reveal (failsafe dom-rect)", { selectedIdx, currentTop, desiredTop, rowH, delta, newOffset });
-            applyVirtualOffset(newOffset);
-          }
-        } else {
-          // Row not rendered — fall back to cumulative-sum estimate.
-          const cache = heightCacheRef.current;
-          const avg = avgRowHeightRef.current;
-          let rowStart = 0;
-          for (let i = 0; i < selectedIdx; i++) {
-            rowStart += cache.get(i) ?? avg;
-          }
-          const rowH = cache.get(selectedIdx) ?? avg;
-          const targetOffset = rowH > viewport
-            ? Math.max(0, rowStart - 24)
-            : Math.max(0, rowStart - viewport / 2 + rowH / 2);
-          if (Math.abs(targetOffset - virtualOffsetRef.current) > 2) {
-            dbg("PIN reveal (failsafe cumulative)", { selectedIdx, rowStart, rowH, targetOffset });
-            applyVirtualOffset(targetOffset);
-          }
-        }
-      }
-      dbg("PIN reveal (failsafe timeout)");
-      setPinned(true);
-    }, 700);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedNonce, hasInitialTarget]);
-  useLayoutEffect(() => {
-    if (selectedIdx == null || selectedIdx < 0 || selectedIdx >= entries.length) return;
-    if (userInteractedRef.current) return;
-    const scrollEl = scrollRef.current;
-    if (!scrollEl) return;
-    const viewport = scrollEl.clientHeight || viewportH;
-    const cache = heightCacheRef.current;
-    const avg = avgRowHeightRef.current;
-    const TOP_PADDING = 24;
-    // Is the selected row currently rendered (in react-virtual's range)?
-    // If so, we can read its actual DOM rect for precise positioning.
-    const isRendered = items.some((it) => it.index === selectedIdx);
-    if (!isRendered) {
-      // Phase 1: row isn't in the rendered range yet. Compute an
-      // approximate target via cumulative-sum-with-estimates so the row
-      // gets near the viewport, mounts, and measureElement fires. Phase 2
-      // (DOM-rect-based) then takes over for exact centring.
-      //
-      // Why NOT delegate to virtualizer.scrollToIndex: in our setup it
-      // calls scrollToFn with 0 (the virtualizer's internal measurements
-      // cache hasn't been built for indices beyond the initial mount range,
-      // and our observeElementOffset reports 0). Reproduced in the trace:
-      // `PIN delegate scrollToIndex {selectedIdx: 23629}` →
-      // `applyVirtualOffset {requested: 0}` despite total ≈ 6.3M px.
-      let rowStart = 0;
-      for (let i = 0; i < selectedIdx; i++) {
-        rowStart += cache.get(i) ?? avg;
-      }
-      const rowH = cache.get(selectedIdx) ?? avg;
-      const targetOffset = rowH > viewport
-        ? Math.max(0, rowStart - TOP_PADDING)
-        : Math.max(0, rowStart - viewport / 2 + rowH / 2);
-      const delta = targetOffset - virtualOffsetRef.current;
-      if (Math.abs(delta) > 2) {
-        dbg("PIN phase1 cumulative", {
-          selectedIdx,
-          rowStart,
-          rowH,
-          targetOffset,
-          prev: virtualOffsetRef.current,
-          delta,
-          measuredCount: cache.size,
-        });
-        applyVirtualOffset(targetOffset);
-      }
-      lastPinTargetRef.current = null;
-      return;
-    }
-    // Phase 2: row is rendered. Read its DOM rect — this is invariant
-    // under measurement updates of OTHER rows: as nearby rows get measured,
-    // react-virtual repositions all visible rows internally, but the
-    // selected row's rect-relative-to-the-scroll-container only changes if
-    // we change virtualOffset. So a delta computed here converges to a
-    // single fixed point in one or two iterations, no oscillation.
-    //
-    // Compare with the old cumulative-sum-from-index-0 approach which
-    // drifted by tens of millions of pixels as new measurements arrived
-    // (selected row at index 23629, avg 2461 → 120 → cumulative shrank
-    // 58M → 30M → 27M).
-    const rowEl = scrollEl.querySelector(
-      `[data-index="${selectedIdx}"]`,
-    ) as HTMLElement | null;
-    if (!rowEl) return; // race: items list says rendered but DOM not yet
-    const scrollRect = scrollEl.getBoundingClientRect();
-    const rowRect = rowEl.getBoundingClientRect();
-    const currentTop = rowRect.top - scrollRect.top;
-    const rowH = rowRect.height;
-    // Anchoring rule: if the row fits in the viewport, centre it. If the
-    // row is TALLER than the viewport, anchor to the top with breathing
-    // room so the highlighted header line is visible.
-    const desiredTop = rowH > viewport
-      ? TOP_PADDING
-      : (viewport - rowH) / 2;
-    const delta = currentTop - desiredTop;
-    const newOffset = Math.max(0, virtualOffsetRef.current + delta);
-    if (Math.abs(delta) > 2) {
-      dbg("PIN phase2 dom-rect", {
-        selectedIdx,
-        currentTop,
-        desiredTop,
-        rowH,
-        delta,
-        prev: virtualOffsetRef.current,
-        next: newOffset,
-        measuredCount: cache.size,
-      });
-      applyVirtualOffset(newOffset);
-      lastPinTargetRef.current = newOffset;
-      return;
-    }
-    // Within tolerance: stable. Reveal.
-    if (!pinnedRef.current) {
-      dbg("PIN reveal (phase2 stable)", {
-        selectedIdx,
-        currentTop,
-        desiredTop,
-        rowH,
-        delta,
-        measuredCount: cache.size,
-      });
-      setPinned(true);
-    }
-    lastPinTargetRef.current = newOffset;
-    // selectedNonce is a dep so the user clicking "Scroll to selected"
-    // re-fires this effect even when nothing else changed (same row, same
-    // entry count). virtualOffset is a dep so Phase 1 → Phase 2 transition
-    // happens on the very next render after Phase 1 applies its target.
-  }, [entries.length, totalSize, selectedIdx, selectedNonce, viewportH, virtualOffset, items, applyVirtualOffset, dbg]);
-
-  // Re-check atBottom whenever offset, viewport or total changes. Also
-  // re-clamp the virtual offset when totalSize shrinks (e.g. after initial
-  // row measurements come in much smaller than the estimate) so we can't
-  // get stuck past the end of the content.
-  useEffect(() => {
-    const max = Math.max(0, totalSize - viewportH);
-    if (virtualOffsetRef.current > max) {
-      dbg("layout-effect re-clamp", { from: virtualOffsetRef.current, to: max, totalSize, viewportH });
-      applyVirtualOffset(max);
-    }
-    dbg("layout-effect updateAtBottom", { virtualOffset, totalSize, viewportH, gap: Math.max(0, totalSize - viewportH) - virtualOffset, atBottomRef: atBottomRef.current });
-    updateAtBottom();
-  }, [virtualOffset, totalSize, viewportH, updateAtBottom, applyVirtualOffset, dbg]);
-
-  // Track scroll container size (clientHeight) — needed for thumb sizing,
-  // wheel, page nav, and atBottom calculation. ResizeObserver keeps it live.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    setViewportH(el.clientHeight);
-    const ro = new ResizeObserver(() => {
-      const h = el.clientHeight;
-      if (h > 0) setViewportH(h);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-
-  // ── Custom scrollbar geometry ──
-  const SCROLLBAR_MIN_THUMB = 24;
-  const scrollable = Math.max(0, totalSize - viewportH);
-  const trackH = viewportH;
-  const thumbH = scrollable > 0
-    ? Math.max(SCROLLBAR_MIN_THUMB, Math.min(trackH, (viewportH / totalSize) * trackH))
-    : 0;
-  const thumbTravel = Math.max(1, trackH - thumbH);
-  const thumbTop = scrollable > 0 ? (virtualOffset / scrollable) * thumbTravel : 0;
-
-  // ── Input handlers ──
-  // Wheel: add deltaY directly to virtual offset.
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault();
-      userInteractedRef.current = true;
-      let dy = e.deltaY;
-      if (e.deltaMode === 1) dy *= avgRowHeightRef.current;
-      else if (e.deltaMode === 2) dy *= viewportH;
-      const max = Math.max(0, totalSizeRef.current - viewportH);
-      applyVirtualOffset(Math.min(max, virtualOffsetRef.current + dy));
-      userScrollUpdateAtBottom();
-    };
-    el.addEventListener("wheel", onWheel, { passive: false });
-    return () => el.removeEventListener("wheel", onWheel);
-  }, [viewportH, applyVirtualOffset, userScrollUpdateAtBottom]);
-
-  // Keyboard nav when focused.
-  const onKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    const max = Math.max(0, totalSizeRef.current - viewportH);
-    const page = viewportH * 0.9;
-    const row = avgRowHeightRef.current;
-    let next = virtualOffsetRef.current;
-    switch (e.key) {
-      case "PageDown": next += page; break;
-      case "PageUp": next -= page; break;
-      case "Home": next = 0; break;
-      case "End": next = max; break;
-      case "ArrowDown": next += row; break;
-      case "ArrowUp": next -= row; break;
-      default: return;
-    }
-    e.preventDefault();
-    userInteractedRef.current = true;
-    applyVirtualOffset(Math.min(max, Math.max(0, next)));
-    userScrollUpdateAtBottom();
-  }, [viewportH, applyVirtualOffset, userScrollUpdateAtBottom]);
-
-  // Thumb pointer drag.
-  const dragStateRef = useRef<{ startY: number; startOffset: number } | null>(null);
-  const onThumbPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-    dragStateRef.current = { startY: e.clientY, startOffset: virtualOffsetRef.current };
-  }, []);
-  const onThumbPointerMove = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    const drag = dragStateRef.current;
-    if (!drag) return;
-    userInteractedRef.current = true;
-    const dy = e.clientY - drag.startY;
-    const scrollableNow = Math.max(0, totalSizeRef.current - viewportH);
-    const travel = Math.max(1, trackH - thumbH);
-    const next = drag.startOffset + (dy / travel) * scrollableNow;
-    applyVirtualOffset(Math.min(scrollableNow, Math.max(0, next)));
-    userScrollUpdateAtBottom();
-  }, [trackH, thumbH, viewportH, applyVirtualOffset, userScrollUpdateAtBottom]);
-  const onThumbPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    dragStateRef.current = null;
-    try { (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId); } catch { /* ignore */ }
-  }, []);
-
-  // Click on the track (outside the thumb) — page up/down.
-  const onTrackPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return; // ignore clicks on the thumb
-    userInteractedRef.current = true;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickY = e.clientY - rect.top;
-    const max = Math.max(0, totalSizeRef.current - viewportH);
-    const page = viewportH * 0.9;
-    const next = clickY < thumbTop
-      ? virtualOffsetRef.current - page
-      : virtualOffsetRef.current + page;
-    applyVirtualOffset(Math.min(max, Math.max(0, next)));
-    userScrollUpdateAtBottom();
-  }, [thumbTop, viewportH, applyVirtualOffset, userScrollUpdateAtBottom]);
-
-  const copyLabel =
-    copyState.phase === "building" ? `Copying… ${copyState.pct}%` :
-      copyState.phase === "done" ? "Copied" : "Copy JSON";
-
-  return (
-    <div className="relative h-full flex flex-col">
-      <button
-        type="button"
-        onClick={onCopy}
-        disabled={copyState.phase === "building"}
-        className="absolute top-2 right-3 px-2 py-1 text-[11px] font-medium rounded border border-slate-300 bg-white/90 backdrop-blur text-slate-600 hover:bg-slate-50 disabled:opacity-60 disabled:cursor-progress z-10 shadow-sm"
-        title="Copy full JSON to clipboard"
-      >
-        {copyLabel}
-      </button>
-      {/* Loading overlay while PIN is anchoring the highlighted row.
-          The scroll viewport itself is visibility:hidden during this window
-          (see `pinned` state); without an overlay the user just sees a blank
-          panel for the few hundred ms it takes react-virtual to measure rows
-          and PIN to converge. The overlay covers that gap with a clear
-          "Locating selected entry..." spinner. */}
-      {!pinned && (
-        <div
-          className="absolute inset-0 z-20 flex items-center justify-center bg-white/70 backdrop-blur-sm"
-          aria-live="polite"
-        >
-          <div className="flex items-center gap-2 text-[12px] text-slate-600">
-            <svg className="w-4 h-4 animate-spin text-sky-500" viewBox="0 0 24 24" fill="none">
-              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="4" />
-              <path d="M12 2a10 10 0 0 1 10 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-            </svg>
-            Locating selected entry…
-          </div>
-        </div>
-      )}
-      <div
-        ref={scrollRef}
-        tabIndex={0}
-        onKeyDown={onKeyDown}
-        className="flex-1 overflow-hidden relative outline-none"
-        style={{ visibility: pinned ? "visible" : "hidden" }}
-      >
-        <div
-          className={cn(
-            "p-4 pt-2 font-mono text-[12px] leading-5 text-slate-700 absolute inset-0",
-            wrapLines ? "whitespace-pre-wrap break-all" : "whitespace-pre",
-            "overflow-x-auto overflow-y-hidden",
-          )}
-          style={{ willChange: "transform" }}
-        >
-          <div style={{ position: "relative", height: "100%" }}>
-            {items.map((vi) => {
-              const i = vi.index;
-              const entry = entries[i];
-              if (!entry) return null;
-              const etxt = getEntryText(entry);
-              const isMatch = matchSet.has(i);
-              const isActive = i === activeEntryIdx;
-              const isSelected = i === selectedEntryIdx;
-              const isCtxAnchor = i === contextAnchorIdx;
-              const isLast = i === entries.length - 1;
-              // Position each item directly at `vi.start - virtualOffset`
-              // (always a small number near the viewport) instead of
-              // translating a giant parent by `-virtualOffset`. At
-              // 50k+ entries the totalSize can exceed 30M px; browser
-              // compositors use float32 for transforms and start
-              // clipping / blanking once offsets cross ~16M (2^24).
-              // Per-item `top` values stay within ±viewport regardless
-              // of scroll position, so we never hit that limit.
-              const top = vi.start - virtualOffset;
-              return (
-                <div
-                  key={vi.key}
-                  ref={virtualizer.measureElement}
-                  data-index={i}
-                  data-entry-idx={i}
-                  onClick={() => {
-                    // Clicking an entry to inspect it should pause auto-tail
-                    // so new entries don't push the inspected row out of view.
-                    // The user resumes by clicking the floating Jump-to-bottom
-                    // button (which scrolls to the end and re-arms atBottom).
-                    if (atBottomRef.current) { atBottomRef.current = false; setAtBottom(false); }
-                    onEntryClick?.(i);
-                  }}
-                  className={cn(
-                    "absolute left-0 right-3 px-4 cursor-pointer",
-                    // Selection (blue) wins over match (amber/yellow) and ctx anchor (violet)
-                    // so the user always sees their explicitly-clicked row highlighted.
-                    isSelected && "bg-sky-50 ring-1 ring-inset ring-sky-400 rounded",
-                    !isSelected && isActive && "bg-amber-50 ring-1 ring-inset ring-amber-300 rounded",
-                    !isSelected && !isActive && isCtxAnchor && "bg-violet-50 ring-1 ring-inset ring-violet-300 rounded",
-                    !isSelected && !isActive && !isCtxAnchor && isMatch && "bg-yellow-50/60",
-                  )}
-                  style={{ top }}
-                >
-                  {i === 0 ? "[\n" : null}
-                  {isMatch ? highlightText(etxt, isActive) : etxt}
-                  {isLast ? "\n]" : ","}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-        {/* Custom scrollbar overlay */}
-        {scrollable > 0 && (
-          <div
-            onPointerDown={onTrackPointerDown}
-            className="absolute top-0 right-0 bottom-0 w-3 bg-slate-100/40 hover:bg-slate-100/70 transition-colors"
-            style={{ touchAction: "none" }}
-          >
-            <div
-              onPointerDown={onThumbPointerDown}
-              onPointerMove={onThumbPointerMove}
-              onPointerUp={onThumbPointerUp}
-              onPointerCancel={onThumbPointerUp}
-              className="absolute left-0.5 right-0.5 rounded bg-slate-400/70 hover:bg-slate-500/80 active:bg-slate-600 cursor-grab active:cursor-grabbing"
-              style={{ top: thumbTop, height: thumbH, touchAction: "none" }}
-            />
-          </div>
-        )}
-        {/* Floating Jump-to-bottom — visible when the user has scrolled away
-            from the tail (manual scroll, click-to-inspect, match-nav). The
-            parent's autoScroll toggle stays enabled; clicking this button
-            simply re-arms atBottom so the auto-tail effect resumes. */}
-        {!atBottom && entries.length > 0 && (
-          <button
-            type="button"
-            onClick={() => {
-              const max = Math.max(0, totalSizeRef.current - viewportH);
-              applyVirtualOffset(max);
-              atBottomRef.current = true;
-              setAtBottom(true);
-              userInteractedRef.current = true;
-            }}
-            className="absolute bottom-4 right-6 px-3 py-1.5 text-xs bg-sky-600 text-white rounded-full shadow-lg hover:bg-sky-700 transition-colors z-10"
-            title={autoScroll ? "Jump to bottom and resume auto-scroll" : "Jump to bottom"}
-          >
-            ↓ Jump to bottom
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ── Tail terminal ────────────────────────────────────────────────────────────
 
 function formatTerminalLine(entry: LogEntry, defaultSource: string): string {
@@ -1750,7 +766,7 @@ const TailTerminal = memo(function TailTerminal({
     // eslint-disable-next-line no-console
     console.log(`[TailTerminal] ${label}`, data ?? {});
   }, []);
-  // Initial atBottom state mirrors JsonLogView: when there's a pending
+  // Initial atBottom state: when there's a pending
   // scroll request on mount (user switched view with a highlight/selection
   // active), start NOT at bottom — otherwise the auto-tail effect (which
   // fires before scroll-to-match in declaration order) would yank the
@@ -2411,6 +1427,8 @@ const EntryRow = memo(function EntryRow({
   matchCase = false,
   wholeWord = false,
   dupeCount = 1,
+  onPickField,
+  pickedKey = null,
 }: {
   entry: LogEntry;
   source: string;
@@ -2431,8 +1449,15 @@ const EntryRow = memo(function EntryRow({
   matchCase?: boolean;
   wholeWord?: boolean;
   dupeCount?: number;
+  /** Clicking a field value in the expanded row picks it for the filter
+   *  builder; `part` is the selected substring of a string value, if any. */
+  onPickField?: (field: PayloadField, part?: string) => void;
+  /** `pickedFieldKey()` of the field currently in the builder. */
+  pickedKey?: string | null;
 }) {
   const [txCopied, setTxCopied] = useState(false);
+  const [rawView, setRawView] = useState(false);
+  const fields = useMemo(() => (expanded ? flattenPayload(entry.payload) : []), [expanded, entry]);
   const tz = useContext(TzContext);
   const effectiveSource = entry.source ?? source;
   const level = getLevel(entry);
@@ -2456,7 +1481,7 @@ const EntryRow = memo(function EntryRow({
     const testRe = new RegExp(`^(?:${wrapped.join("|")})$`, matchCase ? "" : "i");
     // Matches in the active-match row render with amber (the Next/Prev
     // cursor row); matches in every other row render with the lighter
-    // yellow, matching the terminal/JSON viewers' visual scheme.
+    // yellow, matching the terminal viewer's visual scheme.
     const markClass = activeMatch
       ? "bg-amber-400 text-black rounded-sm px-0.5"
       : "bg-yellow-200 text-inherit rounded-sm px-0.5";
@@ -2590,15 +1615,255 @@ const EntryRow = memo(function EntryRow({
       {expanded && (
         <tr className="bg-slate-950 code-surface border-b border-slate-700">
           <td colSpan={6} className="p-0">
-            <pre className="p-4 text-xs font-mono text-green-300 overflow-x-auto whitespace-pre-wrap break-all max-h-96 overflow-y-auto leading-5">
-              {highlight(isText ? getTextPayload(entry) : JSON.stringify(entry.payload, null, 2))}
-            </pre>
+            <div className="flex items-center gap-2 px-4 pt-2">
+              {onPickField && !rawView && (
+                <span className="text-[10px] text-slate-400">
+                  Click a field or value to build a queryFilter clause — select part of a text value to use just that part
+                </span>
+              )}
+              <div className="seg-sm ml-auto">
+                {(["Fields", "Raw"] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    onClick={() => setRawView(v === "Raw")}
+                    className={cn("seg-sm-item", rawView === (v === "Raw") && "seg-sm-item-active")}
+                  >
+                    {v}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {rawView ? (
+              <pre className="p-4 text-xs font-mono text-green-300 overflow-x-auto whitespace-pre-wrap break-all max-h-96 overflow-y-auto leading-5">
+                {highlight(isText ? getTextPayload(entry) : JSON.stringify(entry.payload, null, 2))}
+              </pre>
+            ) : (
+              <div className="px-2 pt-1 pb-3 max-h-96 overflow-y-auto">
+                <table className="w-full text-xs font-mono leading-5">
+                  <tbody>
+                    {fields.map((f, i) => (
+                      <tr key={i} className={cn("align-top", pickedKey === pickedFieldKey(f) && "bg-sky-900/60")}>
+                        <td
+                          className={cn("px-2 text-slate-400 whitespace-nowrap", onPickField && "cursor-pointer hover:bg-slate-800")}
+                          title={f.path}
+                          onClick={onPickField && (() => onPickField(f))}
+                        >
+                          {f.path.replace(/^\/payload\/?/, "") || "payload"}
+                        </td>
+                        <td
+                          className={cn(
+                            "px-2 w-full break-all whitespace-pre-wrap",
+                            f.type === "number" ? "text-amber-300" : f.type === "boolean" ? "text-sky-300" : "text-green-300",
+                            onPickField && "cursor-pointer hover:bg-slate-800",
+                          )}
+                          onClick={onPickField && ((e) => {
+                            // A selection inside this cell narrows the value to just that part.
+                            const sel = window.getSelection();
+                            const cell = e.currentTarget;
+                            const part = sel && !sel.isCollapsed && cell.contains(sel.anchorNode) && cell.contains(sel.focusNode)
+                              ? sel.toString()
+                              : "";
+                            onPickField(f, f.type === "string" && part && part !== f.value ? part : undefined);
+                          })}
+                        >
+                          {highlight(f.value)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </td>
         </tr>
       )}
     </Fragment>
   );
 });
+
+// ── Server filter builder ───────────────────────────────────────────────────
+
+// Every operator is listed in the builder; ones that don't fit the picked
+// value's type are shown disabled so it's clear they exist.
+const ALL_FILTER_OPS: FilterOp[] = ["eq", "co", "sw", "gt", "ge", "lt", "le", "pr"];
+
+function pickedFieldKey(f: PayloadField): string {
+  return `${f.path}\u0000${f.value}`;
+}
+
+/**
+ * Builds one `_queryFilter` clause from a field picked in an expanded table
+ * row: optional `!`, an editable path, an operator valid for the value's
+ * type, and an editable value. The type stays the picked value's even if the
+ * path is edited. Keyed by the parent on each pick so its state resets.
+ */
+function FilterBuilderBar({
+  field,
+  part,
+  hasFilter,
+  onAdd,
+  onClose,
+}: {
+  field: PayloadField;
+  /** Selected substring of a string value; defaults the operator to `co`. */
+  part?: string;
+  /** Whether the Server filter already has content (shows the and/or join). */
+  hasFilter: boolean;
+  onAdd: (clause: string, join: "and" | "or") => void;
+  onClose: () => void;
+}) {
+  const [op, setOp] = useState<FilterOp>(part ? "co" : "eq");
+  const [negate, setNegate] = useState(false);
+  const [path, setPath] = useState(field.path);
+  const [value, setValue] = useState(part ?? field.value);
+  const [join, setJoin] = useState<"and" | "or">("and");
+  const p = path.trim();
+  const v = value.trim();
+  const pathInvalid = !p.startsWith("/");
+  const valueInvalid = op !== "pr" && (
+    field.type === "number" ? v === "" || !Number.isFinite(Number(v))
+      : field.type === "boolean" ? v !== "true" && v !== "false"
+        : value === ""
+  );
+  const clause = buildClause({ path: p, op, value, type: field.type, negate });
+
+  const allowed = operatorsFor(field.type);
+
+  return (
+    <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-100 text-xs">
+      <button
+        type="button"
+        onClick={() => setNegate((n) => !n)}
+        title="NOT — wrap the clause in !( )"
+        className={cn("toggle-chip font-mono shrink-0", negate && "toggle-chip-on")}
+      >
+        !
+      </button>
+      <input
+        type="text"
+        value={path}
+        onChange={(e) => setPath(e.target.value)}
+        title="Field path (JSON pointer), e.g. /payload/eventName"
+        className={cn(
+          "w-64 min-w-0 rounded border px-2 py-0.5 font-mono focus:outline-none focus:ring-1",
+          pathInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
+        )}
+      />
+      <div className="seg-sm">
+        {ALL_FILTER_OPS.map((o) => (
+          <button
+            key={o}
+            type="button"
+            onClick={() => setOp(o)}
+            disabled={!allowed.includes(o)}
+            title={allowed.includes(o) ? undefined
+              : o === "co" || o === "sw" ? "Text values only" : "Numeric values only"}
+            className={cn(
+              "seg-sm-item font-mono disabled:opacity-25 disabled:line-through",
+              op === o && "seg-sm-item-active",
+            )}
+          >
+            {o}
+          </button>
+        ))}
+      </div>
+      {op !== "pr" && (
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className={cn(
+            "w-56 min-w-0 rounded border px-2 py-0.5 font-mono focus:outline-none focus:ring-1",
+            valueInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
+          )}
+        />
+      )}
+      <span className="flex-1 min-w-0 truncate text-[11px] text-slate-400" title={clause}>
+        → <code className="font-mono text-slate-500">{clause}</code>
+      </span>
+      {hasFilter && (
+        <div className="seg-sm shrink-0" title="How to join this clause with the existing queryFilter">
+          {(["and", "or"] as const).map((j) => (
+            <button
+              key={j}
+              type="button"
+              onClick={() => setJoin(j)}
+              className={cn("seg-sm-item font-mono", join === j && "seg-sm-item-active")}
+            >
+              {j}
+            </button>
+          ))}
+        </div>
+      )}
+      <button
+        type="button"
+        onClick={() => onAdd(clause, join)}
+        disabled={pathInvalid || valueInvalid}
+        className="px-3 py-1 text-xs font-medium bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50 transition-colors shrink-0"
+      >
+        Add to queryFilter
+      </button>
+      <button
+        type="button"
+        onClick={onClose}
+        title="Close"
+        className="px-1.5 text-slate-400 hover:text-slate-600 shrink-0"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+// ── Custom time range input ─────────────────────────────────────────────────
+
+/**
+ * One end of the custom time range. `value` is always a datetime-local string
+ * in the display zone; "text" mode edits it as a typed or pasted timestamp
+ * (e.g. a log entry's `2026-10-13T02:08:30.383Z`) and writes "" while the text
+ * doesn't parse, so Search reports the range as incomplete. Keyed by mode so
+ * the text draft restarts from `value` on each switch.
+ */
+function CustomTimeInput({ mode, value, onChange, tz, round, invalid, disabled }: {
+  mode: "pick" | "text";
+  value: string;
+  onChange: (v: string) => void;
+  tz: TzMode;
+  /** floor for the range start, ceil for the end, so a pasted entry stays in range. */
+  round: "floor" | "ceil";
+  invalid: boolean;
+  disabled: boolean;
+}) {
+  const [draft, setDraft] = useState(() => (value ? fromDatetimeLocal(value, tz) : ""));
+  const draftInvalid = mode === "text" && draft.trim() !== "" && !value;
+  const cls = cn(
+    "rounded border px-1.5 py-0.5 text-[11px] font-mono focus:outline-none focus:ring-1",
+    invalid || draftInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
+  );
+  if (mode === "pick") {
+    return (
+      <input type="datetime-local" step="1" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} className={cls} />
+    );
+  }
+  return (
+    <input
+      type="text"
+      value={draft}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const d = parsePastedTimestamp(e.target.value, tz === "local" ? "local" : "utc", round);
+        onChange(d ? toDatetimeLocal(d.toISOString(), tz) : "");
+      }}
+      placeholder="2026-10-13T02:08:30.383Z"
+      title={draftInvalid
+        ? "Not a timestamp. Use e.g. 2026-10-13T02:08:30.383Z, 2026-10-13 02:08:30, or epoch seconds/ms."
+        : "ISO timestamp (Z or ±hh:mm), a zoneless time in the current time zone, or epoch seconds/ms."}
+      disabled={disabled}
+      className={cn(cls, "w-48")}
+    />
+  );
+}
 
 // ── Transaction drill-down modal ────────────────────────────────────────────
 
@@ -2780,6 +2045,8 @@ export function LogsExplorer({
   const { env, selectedSources, sourcesError, levelFilter, mode, tailSecs, tailing, loading, preset, customBegin, customEnd, searchSeq, searching } = config;
   const { confirm } = useDialog();
   const tz = useContext(TzContext);
+  // Custom time range: date picker or a typed / pasted timestamp.
+  const [timeInputMode, setTimeInputMode] = useState<"pick" | "text">("pick");
   const tailBufferMax = useContext(TailBufferContext);
   const tailBufferMaxRef = useRef(tailBufferMax);
   useEffect(() => { tailBufferMaxRef.current = tailBufferMax; }, [tailBufferMax]);
@@ -2792,45 +2059,40 @@ export function LogsExplorer({
   const keywordsRawRef = useRef("");
   const [keywordsActive, setKeywordsActive] = useState(""); // debounced — drives actual highlighting
   const keywordsDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Search-mode only: keywords sent to AIC as the server-side _queryFilter (separate
-  // from the client-side Highlight box, which only colors matches).
-  const [searchKeywordsRaw, setSearchKeywordsRaw] = useState("");
-  const searchKeywordsRawRef = useRef("");
-  // Snapshot of the Search keywords (and their case/word options) as of the
-  // last executed search. Edits to the input do NOT alter the displayed
-  // results — those terms are only re-read when the search is executed again.
-  const [searchKeywordsApplied, setSearchKeywordsApplied] = useState<{
-    raw: string; matchCase: boolean; wholeWord: boolean;
-  }>({ raw: "", matchCase: false, wholeWord: false });
+  // Server filter: a raw CREST _queryFilter sent to AIC as-is by Search and Tail
+  // (Remote). In Local mode the same box is the archive's text search. Read at
+  // search / tail start; Enter while tailing bumps tailFilterSeq to restart.
+  const [serverFilterRaw, setServerFilterRaw] = useState("");
+  const serverFilterRawRef = useRef("");
+  const [tailFilterSeq, setTailFilterSeq] = useState(0);
+  // Field picked from an expanded table row for the filter builder. `nonce`
+  // keys the builder so re-picking (even the same field) resets its state.
+  const [pickedField, setPickedField] = useState<{ field: PayloadField; part?: string; nonce: number } | null>(null);
+  const handlePickField = useCallback((field: PayloadField, part?: string) => {
+    setPickedField((p) => ({ field, part, nonce: (p?.nonce ?? 0) + 1 }));
+  }, []);
+  const addToServerFilter = useCallback((clause: string, join: "and" | "or") => {
+    const next = appendClause(serverFilterRawRef.current, clause, join);
+    setServerFilterRaw(next);
+    serverFilterRawRef.current = next;
+    setPickedField(null);
+  }, []);
   const [matchCursor, setMatchCursor] = useState(-1); // index into matchRows; -1 = none selected
   const [activeMatchKey, setActiveMatchKey] = useState<string | null>(null);
   const [matchScrollNonce, setMatchScrollNonce] = useState(0);
-  // Unified "selected entry" — driven by single-click in any view (terminal,
-  // table, JSON). Persists across view switches. Click only updates the index
+  // Unified "selected entry" — driven by single-click in either view (terminal,
+  // table). Persists across view switches. Click only updates the index
   // (no scroll — viewport stays put). selectedScrollNonce is bumped only when
   // the view mode changes (or when explicitly jumping from match-nav), so a
   // view switch auto-scrolls the new view to the previously selected entry.
   const [selectedEntryIdx, setSelectedEntryIdx] = useState<number | null>(null); // index into `filtered`
   const [selectedScrollNonce, setSelectedScrollNonce] = useState(0);
-  // Snapshot of selectedEntryIdx at the moment selectedScrollNonce was last
-  // bumped. The JsonLogView's PIN treats this as its scroll target. We do
-  // NOT pass live `selectedEntryIdx` to PIN: a click changes
-  // selectedEntryIdx (for highlight) without bumping nonce, so PIN must
-  // ignore it — otherwise every click would re-trigger PIN and scroll the
-  // viewport to the clicked row, breaking the "click highlights in place"
-  // contract. useMemo with [selectedScrollNonce] only captures
-  // selectedEntryIdx at the instant the nonce changes.
-  const selectedScrollRequest = useMemo(() => {
-    if (selectedScrollNonce <= 0 || selectedEntryIdx == null) return null;
-    return { index: selectedEntryIdx, nonce: selectedScrollNonce };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedScrollNonce]);
   const handleEntrySelect = useCallback((displayIdx: number) => {
     setSelectedEntryIdx(displayIdx);
     // Clicking an entry to inspect it pauses Table-view auto-tail so the
     // selected row stays in view. The autoScroll toggle stays on; user
-    // resumes by clicking the floating Jump-to-bottom button. Terminal &
-    // JSON viewers manage their own atBottom flag in their click handlers.
+    // resumes by clicking the floating Jump-to-bottom button. The terminal
+    // viewer manages its own atBottom flag in its click handler.
     if (scrollAtBottomRef.current) {
       scrollAtBottomRef.current = false;
       setTableAtBottom(false);
@@ -2838,7 +2100,7 @@ export function LogsExplorer({
     // Pin the table page so the page-tracking effect doesn't snap back to
     // the latest page when new tail batches arrive — that snap-back would
     // override the selectedEntryIdx scroll effect's setPage(targetPage) on
-    // a terminal/json -> table switch and leave the viewport on a
+    // a terminal -> table switch and leave the viewport on a
     // different page than the one containing the selected row.
     tableManualPagingRef.current = true;
     // Intentionally do NOT bump selectedScrollNonce — clicking should not move
@@ -2851,8 +2113,6 @@ export function LogsExplorer({
   // coloring of Filter / Search auto-highlighted terms uses Highlight's settings.
   const [filterMatchCase, setFilterMatchCase] = useState(false);
   const [filterWholeWord, setFilterWholeWord] = useState(false);
-  const [searchMatchCase, setSearchMatchCase] = useState(false);
-  const [searchWholeWord, setSearchWholeWord] = useState(false);
   const highlightInputRef = useRef<HTMLInputElement>(null);
 
 
@@ -2864,13 +2124,17 @@ export function LogsExplorer({
 
   const [showFullMessage, setShowFullMessage] = useState(false);
   // View prefs live in TabConfig so they persist per tab across reloads.
-  const viewMode: "terminal" | "table" | "json" =
-    config.viewMode ?? (config.terminalView === false ? "table" : "terminal");
+  // A tab saved with the removed JSON view ("json") opens in Table.
+  const viewMode: "terminal" | "table" =
+    (config.viewMode ?? (config.terminalView === false ? "table" : "terminal")) === "terminal" ? "terminal" : "table";
   const terminalView = viewMode === "terminal";
   const wrapLines = config.wrapLines ?? false;
   const dedupe = config.dedupe ?? false;
-  const autoScroll = config.autoScroll ?? true;
-  const setViewMode = useCallback((v: "terminal" | "table" | "json") => {
+  // The Auto-scroll toggle is a Tail control. Search and Transaction results
+  // always follow the newest page as it streams in; scrolling away or clicking
+  // an entry still pauses that, and Jump to bottom resumes it.
+  const autoScroll = mode !== "tail" || (config.autoScroll ?? true);
+  const setViewMode = useCallback((v: "terminal" | "table") => {
     // Also write terminalView for backward compat with any pre-existing persisted state.
     onConfigChange({ viewMode: v, terminalView: v === "terminal" });
   }, [onConfigChange]);
@@ -2962,8 +2226,8 @@ export function LogsExplorer({
   const scrollAtBottomRef = useRef(true);
   // Mirror of scrollAtBottomRef in React state — drives the visibility of
   // the floating Jump-to-bottom button for Table view (where the parent
-  // container is the scroll surface). Terminal & JSON views render their
-  // own button using their internal atBottom state.
+  // container is the scroll surface). The terminal view renders its
+  // own button using its internal atBottom state.
   const [tableAtBottom, setTableAtBottom] = useState(true);
   // Ignore the onScroll events that fire as a consequence of our own
   // programmatic scrolls (auto-scroll-to-bottom, scrollIntoView to a match)
@@ -3200,23 +2464,24 @@ export function LogsExplorer({
 
   useEffect(() => {
     const levels = resolveLevels(levelFilter);
+    const queryFilter = serverFilterRawRef.current.trim() || undefined;
     if (tailing && !prevTailing.current) {
       // Start tail
       setTailTotalReceived(0);
       setEntries([]);
       setFetched(false);
       setError("");
-      workerRef.current?.postMessage({ type: "tail-start", env, sources: tailSources, tailSecs, levels });
+      workerRef.current?.postMessage({ type: "tail-start", env, sources: tailSources, tailSecs, levels, queryFilter });
     } else if (!tailing && prevTailing.current) {
       // Stop tail
       workerRef.current?.postMessage({ type: "tail-stop" });
     } else if (tailing && prevTailing.current) {
-      // Restart tail (tailSecs, selected sources, or levelFilter changed)
-      workerRef.current?.postMessage({ type: "tail-start", env, sources: tailSources, tailSecs, levels });
+      // Restart tail (tailSecs, selected sources, levelFilter or server filter changed)
+      workerRef.current?.postMessage({ type: "tail-start", env, sources: tailSources, tailSecs, levels, queryFilter });
     }
     prevTailing.current = tailing;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tailing, tailSecs, levelFilter, tailSources.join(",")]);
+  }, [tailing, tailSecs, levelFilter, tailSources.join(","), tailFilterSeq]);
 
   // ── React to search mode fetch trigger ──
   const prevSearchSeq = useRef(0);
@@ -3260,41 +2525,20 @@ export function LogsExplorer({
       endTime = now.toISOString();
     }
 
-    // Build server-side _queryFilter from the dedicated Search keywords box (search mode only).
-    // The Filter and Highlight boxes are client-side only — do NOT include them here.
-    // This mirrors Tenant Utilities' approach: only matching entries are returned by AIC,
-    // dramatically reducing page count and eliminating rate-limit risk on long ranges.
-    function escapeFilterValue(v: string) { return v.replace(/\\/g, "\\\\").replace(/"/g, '\\"'); }
-    // Parse the Search keywords box and pull out positive leaf terms. Server-side filtering is
-    // a conservative OR over leaves; the client predicate (Filter box) still enforces && / () precisely.
-    const parsed = parseQuery(
-      normalizeSearchKeywords(searchKeywordsRawRef.current),
-      { matchCase: searchMatchCase, wholeWord: searchWholeWord },
-    );
-    const allTerms = parsed.error ? [] : parsed.highlightTerms;
-    const queryFilter = allTerms.length > 0
-      ? allTerms.map((t) => {
-        const v = escapeFilterValue(t);
-        return `(/payload co "${v}") or (/payload/message co "${v}") or (/payload/eventName co "${v}")`;
-      }).join(" or ")
-      : undefined;
+    // The Server filter box is sent to AIC verbatim as _queryFilter, so only
+    // matching entries are downloaded. The Filter and Highlight boxes are
+    // client-side only — do NOT include them here.
+    const queryFilter = serverFilterRawRef.current.trim() || undefined;
 
     setError("");
     setEntries([]);
     setFetched(false);
     setExpandedTableRows(new Set());
     setFetchProgress(null);
-    // Freeze the Search keywords + per-field options for this run so subsequent
-    // edits to the input don't re-filter the loaded results.
-    setSearchKeywordsApplied({
-      raw: searchKeywordsRawRef.current,
-      matchCase: searchMatchCase,
-      wholeWord: searchWholeWord,
-    });
     onConfigChange({ searching: true });
 
         if (config.dataSource === "local") {
-            const text = searchKeywordsRawRef.current.trim() || undefined;
+            const text = queryFilter;
             const lv = resolveLevels(levelFilter);
             const level = lv && lv.length === 1 ? lv[0] : undefined;
             const archiveSources = toArchiveSources(selectedSources);
@@ -3309,7 +2553,7 @@ export function LogsExplorer({
                         done: true,
                         paused: false,
                         source: "local archive",
-                        window: capped ? `first ${entries.length.toLocaleString()} of ${total.toLocaleString()} — refine to see more` : undefined,
+                        window: capped ? `first ${entries.length.toLocaleString("en-US")} of ${total.toLocaleString("en-US")} — refine to see more` : undefined,
                     });
                     onConfigChange({ searching: false });
                 })
@@ -3338,7 +2582,7 @@ export function LogsExplorer({
     [entries, levelFilter]);
 
   // Lazy per-entry JSON cache. JSON.stringify is the hottest op (used by
-  // filterQuery/searchKeywordsParsed/highlightQuery .test calls). At 200k
+  // filterQuery/highlightQuery .test calls). At 200k
   // entries an eager parallel array re-stringifies the whole buffer on every
   // tail tick — hundreds of MB churned per second. WeakMap keyed on the entry
   // object survives across re-renders; entries dropped from the circular
@@ -3365,17 +2609,7 @@ export function LogsExplorer({
     () => parseQuery(keywordsActive, { matchCase: highlightMatchCase, wholeWord: highlightWholeWord }),
     [keywordsActive, highlightMatchCase, highlightWholeWord],
   );
-  // Parsed Search keywords as of the last executed search (search mode only).
-  // Drives both the client-side AND/OR enforcement and auto-highlighting; live
-  // edits to the input are ignored until the user runs the search again.
-  const searchKeywordsParsed = useMemo(
-    () => parseQuery(normalizeSearchKeywords(searchKeywordsApplied.raw), {
-      matchCase: searchKeywordsApplied.matchCase,
-      wholeWord: searchKeywordsApplied.wholeWord,
-    }),
-    [searchKeywordsApplied],
-  );
-  // Auto-highlight terms = union of Highlight + Filter + Search keyword leaves.
+  // Auto-highlight terms = union of Highlight + Filter leaves.
   // Rendering uses Highlight's matchCase / wholeWord (uniform regex required).
   const keywords = useMemo(() => {
     const out: string[] = [];
@@ -3391,33 +2625,23 @@ export function LogsExplorer({
     };
     if (!highlightQuery.empty && !highlightQuery.error) push(highlightQuery.highlightTerms);
     if (!filterQuery.empty && !filterQuery.error) push(filterQuery.highlightTerms);
-    if (mode === "search" && !searchKeywordsParsed.empty && !searchKeywordsParsed.error) {
-      push(searchKeywordsParsed.highlightTerms);
-    }
     return out;
-  }, [highlightQuery, filterQuery, searchKeywordsParsed, mode, highlightMatchCase]);
+  }, [highlightQuery, filterQuery, highlightMatchCase]);
 
   const rawFilteredWithIdx = useMemo(() => {
-    // Server-side _queryFilter is a conservative OR over leaves of the Search box,
-    // so in search mode we also need to enforce the parsed Search query (which can
-    // contain && / () precedence) client-side. The Filter box query is always applied.
-    const applySearch =
-      mode === "search" && !searchKeywordsParsed.empty && !searchKeywordsParsed.error;
-    // Fast path: no filter active, no search-mode client-side gate — return a
-    // single shared identity-mapped array. Avoids allocating 200k wrapper
-    // objects on every tail tick when the user isn't filtering.
-    if (filterQuery.empty && !applySearch) {
+    // Fast path: no filter active — return a single shared identity-mapped
+    // array. Avoids allocating 200k wrapper objects on every tail tick when
+    // the user isn't filtering.
+    if (filterQuery.empty) {
       return levelFiltered.map((e, i) => ({ e, i }));
     }
     if (filterQuery.error) return [] as { e: LogEntry; i: number }[];
     return levelFiltered.reduce<{ e: LogEntry; i: number }[]>((acc, e, i) => {
-      const json = getEntryJson(e);
-      if (!filterQuery.test(json)) return acc;
-      if (applySearch && !searchKeywordsParsed.test(json)) return acc;
+      if (!filterQuery.test(getEntryJson(e))) return acc;
       acc.push({ e, i });
       return acc;
     }, []);
-  }, [levelFiltered, filterQuery, mode, searchKeywordsParsed, getEntryJson]);
+  }, [levelFiltered, filterQuery, getEntryJson]);
 
   // Dedupe pass — collapses exact-match duplicates to the first occurrence and tracks counts.
   // Key: source + level + message text. When off, dupeCounts is empty and everything passes through.
@@ -3503,7 +2727,7 @@ export function LogsExplorer({
 
   // Compute indices into `filtered` where the highlight query matches the
   // entry's full JSON — so a match in a payload field that's not in the
-  // formatted terminal line still counts (visible in Table/JSON view).
+  // formatted terminal line still counts (visible in an expanded Table row).
   const matchRows = useMemo(() => {
     if (highlightQuery.empty || highlightQuery.error) return [];
     const out: { key: string; index: number }[] = [];
@@ -3580,7 +2804,7 @@ export function LogsExplorer({
     // Pre-emptively pause Table-view auto-tail. Without this, a tail batch
     // arriving between the rAF schedule below and its callback would yank
     // the container to the bottom before scrollIntoView corrects it.
-    if (viewMode === "table" || viewMode === "json") {
+    if (viewMode === "table") {
       scrollAtBottomRef.current = false;
       setTableAtBottom(false);
     }
@@ -3611,15 +2835,6 @@ export function LogsExplorer({
           setTableAtBottom(false);
         }
       });
-    }
-
-    // JSON view: route through the Selection PIN so the virtualized
-    // viewer can precisely center the target row even when it isn't
-    // currently rendered. Bumping selectedScrollNonce + updating
-    // selectedEntryIdx triggers JsonLogView's PIN convergence loop.
-    if (viewMode === "json") {
-      setSelectedEntryIdx(row.index);
-      setSelectedScrollNonce((n) => n + 1);
     }
   }
 
@@ -3721,10 +2936,12 @@ export function LogsExplorer({
   }, [viewMode]);
 
   // Scroll selected entry into view after switching view modes (table only;
-  // JSON / terminal viewers handle their own scroll via selectedScrollRequest).
+  // the terminal viewer handles its own scroll via scrollRequest). The row is
+  // also expanded, so an entry picked in Terminal lands ready to build a filter.
   useEffect(() => {
     if (selectedEntryIdx === null) return;
     if (viewMode !== "table") return; // table is the only one parent-scrolled
+    setExpandedTableRows((prev) => prev.has(selectedEntryIdx) ? prev : new Set(prev).add(selectedEntryIdx));
     // Pre-emptively pause auto-tail synchronously, before the rAF below.
     // The parent auto-tail effect depends on `entries`, so any new tail
     // batch arriving in the gap between commit and rAF would otherwise
@@ -3778,9 +2995,8 @@ export function LogsExplorer({
   // re-scroll to that match in the new view. Two reasons this is needed:
   //   1. Terminal view's scroll-to-match effect keys off matchScrollNonce, so
   //      the nonce must change for it to re-fire after the view re-mounts.
-  //   2. JSON view does not consume matchScrollRequest at all and the table
-  //      view's existing per-view-switch scroll effect only handles
-  //      selectedEntryIdx, so they each need an imperative scroll here.
+  //   2. The table view's existing per-view-switch scroll effect only handles
+  //      selectedEntryIdx, so it needs an imperative scroll here.
   // Auto-scroll-to-bottom is intentionally overridden — when the user has a
   // highlight active, they care about the highlighted entry, not the tail.
   useEffect(() => {
@@ -3791,8 +3007,8 @@ export function LogsExplorer({
     // the new view lands on what the user explicitly picked.
     if (selectedEntryIdx !== null && selectedEntryIdx !== activeMatchIndex) return;
     // Pre-emptively pause Table-view auto-tail (see the selectedEntryIdx
-    // effect above for the same rationale). For terminal/json the in-viewer
-    // scroll-to-match effects clear their own atBottomRef.
+    // effect above for the same rationale). For terminal the in-viewer
+    // scroll-to-match effect clears its own atBottomRef.
     scrollAtBottomRef.current = false;
     setTableAtBottom(false);
     // Bump the match-scroll nonce so terminal view re-issues its scroll.
@@ -3821,16 +3037,61 @@ export function LogsExplorer({
           }
         });
       });
-    } else if (viewMode === "json") {
-      // Route through Selection PIN so the JsonLogView virtualizer can
-      // precisely center the (possibly unrendered) target row.
-      setSelectedEntryIdx(activeMatchIndex);
-      setSelectedScrollNonce((n) => n + 1);
     }
     // Only fire on view-mode switches; don't re-scroll just because the active
     // match index moved (navigateToMatch already handles that case).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode]);
+
+  // Server filter input, shared by the Tail and Search toolbars. Local search
+  // reuses it as the archive's plain-text search.
+  const localSearch = mode === "search" && config.dataSource === "local";
+  // Picking fields only makes sense where the Server filter is a CREST filter.
+  const canBuildFilter = (mode === "tail" || mode === "search") && !localSearch;
+  // onClear runs after the box is emptied (Tail uses it to restart right away).
+  const renderServerFilter = (onEnter: () => void, disabled: boolean, onClear?: () => void) => (
+    <>
+      <span className="text-slate-300 select-none">|</span>
+      <label className="text-xs font-medium text-slate-500 whitespace-nowrap">
+        {localSearch ? "Text" : "queryFilter"}
+      </label>
+      <input
+        type="text"
+        value={serverFilterRaw}
+        onChange={(e) => {
+          setServerFilterRaw(e.target.value);
+          serverFilterRawRef.current = e.target.value;
+        }}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !disabled) {
+            e.preventDefault();
+            onEnter();
+          }
+        }}
+        disabled={disabled}
+        placeholder={localSearch ? "Text search in the local archive…" : '_queryFilter, e.g. /payload/eventName eq "AM-ACCESS-ATTEMPT"'}
+        title={localSearch
+          ? "Plain-text search over the local archive's indexed fields."
+          : "Sent to AIC as-is as _queryFilter (CREST syntax: eq co sw lt le gt ge pr, and / or / !( )). Pick fields from an expanded table row to build it. Leave blank for everything."}
+        className="flex-1 min-w-0 text-xs rounded border border-slate-300 px-2.5 py-1 font-mono focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 disabled:opacity-50"
+      />
+      {serverFilterRaw !== "" && (
+        <button
+          type="button"
+          onClick={() => {
+            setServerFilterRaw("");
+            serverFilterRawRef.current = "";
+            onClear?.();
+          }}
+          disabled={disabled}
+          title={onClear ? "Clear the filter" : "Clear the filter (press Enter or Search to apply)"}
+          className="px-2 py-1 text-xs text-slate-500 rounded hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 shrink-0"
+        >
+          Clear
+        </button>
+      )}
+    </>
+  );
 
   return (
     <div className="space-y-4">
@@ -3839,7 +3100,7 @@ export function LogsExplorer({
         {tailing && (
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <span className="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            {loading ? "Fetching…" : lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : "Starting…"}
+            {loading ? "Fetching…" : lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString("en-US")}` : "Starting…"}
           </div>
         )}
         {(fetched || tailTotalReceived > 0) && (() => {
@@ -3850,10 +3111,10 @@ export function LogsExplorer({
           return (
             <span className="text-xs text-slate-400">
               {filtered.length}
-              {filtered.length !== totalReceived && `/${totalReceived.toLocaleString()}`}{" "}
+              {filtered.length !== totalReceived && `/${totalReceived.toLocaleString("en-US")}`}{" "}
               {totalReceived === 1 ? "entry" : "entries"}
               {dedupe && dedupeHidden > 0 && (
-                <span className="text-amber-600"> · {dedupeHidden.toLocaleString()} deduped</span>
+                <span className="text-amber-600"> · {dedupeHidden.toLocaleString("en-US")} deduped</span>
               )}
               {loading && !tailing && " · loading…"}
             </span>
@@ -3890,8 +3151,12 @@ export function LogsExplorer({
           </div>
         )}
 
-        {/* Toolbar */}
-        <div className="flex flex-col border-b border-slate-100 bg-slate-50/50 shrink-0">
+        {/* Toolbar — pinned under the app header while the page scrolls, so the
+            queryFilter and filter builder stay reachable next to the logs. */}
+        <div className={cn(
+          "flex flex-col border-b border-slate-100 shrink-0",
+          fullscreen ? "bg-slate-50/50" : "sticky top-[var(--app-header-h,58px)] z-30 bg-slate-50 rounded-t-lg",
+        )}>
           {/* Row 1: mode toggle + tail/search controls + keyword highlights */}
           <div className="flex items-center gap-2 px-4 py-2">
             {/* Mode toggle */}
@@ -3936,6 +3201,14 @@ export function LogsExplorer({
                     Stop Tail
                   </button>
                 )}
+                {renderServerFilter(
+                  () => {
+                    if (tailing) setTailFilterSeq((n) => n + 1);
+                    else if (selectedSources.length > 0 && !sourcesError) onConfigChange({ tailing: true });
+                  },
+                  loading || searching,
+                  () => { if (tailing) setTailFilterSeq((n) => n + 1); },
+                )}
               </>
             )}
 
@@ -3957,28 +3230,39 @@ export function LogsExplorer({
                   </select>
                   {preset === "custom" && (
                     <>
-                      <input
-                        type="datetime-local"
-                        step="1"
+                      <div className="seg-sm" title="Pick a time, or type / paste a timestamp such as 2026-10-13T02:08:30.383Z">
+                        {(["pick", "text"] as const).map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setTimeInputMode(m)}
+                            disabled={searching}
+                            className={cn("seg-sm-item", timeInputMode === m && "seg-sm-item-active")}
+                          >
+                            {m === "pick" ? "Pick" : "Text"}
+                          </button>
+                        ))}
+                      </div>
+                      <CustomTimeInput
+                        key={`begin-${timeInputMode}`}
+                        mode={timeInputMode}
                         value={customBegin}
-                        onChange={(e) => onConfigChange({ customBegin: e.target.value })}
+                        onChange={(v) => onConfigChange({ customBegin: v })}
+                        tz={tz}
+                        round="floor"
+                        invalid={customRangeInvalid}
                         disabled={searching}
-                        className={cn(
-                          "rounded border px-1.5 py-0.5 text-[11px] font-mono focus:outline-none focus:ring-1",
-                          customRangeInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
-                        )}
                       />
                       <span className="text-slate-400 text-[11px]">→</span>
-                      <input
-                        type="datetime-local"
-                        step="1"
+                      <CustomTimeInput
+                        key={`end-${timeInputMode}`}
+                        mode={timeInputMode}
                         value={customEnd}
-                        onChange={(e) => onConfigChange({ customEnd: e.target.value })}
+                        onChange={(v) => onConfigChange({ customEnd: v })}
+                        tz={tz}
+                        round="ceil"
+                        invalid={customRangeInvalid}
                         disabled={searching}
-                        className={cn(
-                          "rounded border px-1.5 py-0.5 text-[11px] font-mono focus:outline-none focus:ring-1",
-                          customRangeInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
-                        )}
                       />
                       {customRangeInvalid && (
                         <span className="text-[11px] text-rose-600 whitespace-nowrap" title="End time must be after start time">
@@ -4029,51 +3313,14 @@ export function LogsExplorer({
                       )}
                     </button>
                   )}
-                  {/* Server-side search keywords — sent to AIC as _queryFilter, runs at fetch time. */}
-                  <span className="text-slate-300 select-none">|</span>
-                  <label className="text-xs font-medium text-slate-500">Keywords</label>
-                  <input
-                    type="text"
-                    value={searchKeywordsRaw}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setSearchKeywordsRaw(val);
-                      searchKeywordsRawRef.current = val;
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !searching && !customRangeInvalid && selectedSources.length > 0 && !sourcesError) {
-                        e.preventDefault();
+                  {renderServerFilter(
+                    () => {
+                      if (!customRangeInvalid && selectedSources.length > 0 && !sourcesError) {
                         onConfigChange({ searchSeq: (searchSeq ?? 0) + 1 });
                       }
-                    }}
-                    disabled={searching}
-                    placeholder="Server-side keywords (||, &quot;phrase&quot;)…"
-                    title="Sent to AIC as _queryFilter — restricts what's downloaded. Leave blank to fetch everything in the time range."
-                    className="flex-1 min-w-0 text-xs rounded border border-slate-300 px-2.5 py-1 font-mono focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 disabled:opacity-50"
-                  />
-                  {/* Per-field Aa/[W] for Search keywords. Note: AIC's _queryFilter is
-                      always case-insensitive substring; these toggles control how the
-                      same terms are auto-highlighted in the rendered results. */}
-                  <div className="seg-sm">
-                    <button
-                      type="button"
-                      title="Case sensitive (auto-highlight only — AIC server is always case-insensitive)"
-                      onClick={() => setSearchMatchCase((v) => !v)}
-                      className={cn(
-                        "seg-sm-item font-mono",
-                        searchMatchCase && "seg-sm-item-active"
-                      )}
-                    >Aa</button>
-                    <button
-                      type="button"
-                      title="Whole word (auto-highlight only — AIC server has no whole-word operator)"
-                      onClick={() => setSearchWholeWord((v) => !v)}
-                      className={cn(
-                        "seg-sm-item font-mono",
-                        searchWholeWord && "seg-sm-item-active"
-                      )}
-                    >[W]</button>
-                  </div>
+                    },
+                    searching,
+                  )}
                   <div className="seg-sm">
                     {(["remote", "local"] as const).map((ds) => (
                       <button
@@ -4155,15 +3402,32 @@ export function LogsExplorer({
 
           </div>
 
+          {canBuildFilter && pickedField && (
+            <FilterBuilderBar
+              key={pickedField.nonce}
+              field={pickedField.field}
+              part={pickedField.part}
+              hasFilter={serverFilterRaw.trim() !== ""}
+              onAdd={addToServerFilter}
+              onClose={() => setPickedField(null)}
+            />
+          )}
+
           {/* Row 2: Query — Filter and Highlight side-by-side; share one Aa/[W] toggle pair and the match navigator */}
           <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-100">
-            <label className="text-xs font-medium text-slate-500 shrink-0">Filter</label>
+            <label
+              className="text-xs font-medium text-slate-500 shrink-0"
+              title="Narrows the logs already loaded on this page, in the browser. Does not query AIC — use queryFilter for that."
+            >
+              Search loaded
+            </label>
             <input
               type="text"
               value={rawSearch}
               onChange={(e) => handleFilterChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") applySearch(rawSearch); }}
-              placeholder="Filter entries… (space=AND, ||, ( ), &quot;phrase&quot;; 3+ chars or Enter)"
+              placeholder='error timeout · error || warn · "exact phrase"'
+              title="Shows only loaded entries that match. Space = all words, || = either side, &quot;quotes&quot; = exact phrase. Applies after 3 characters or on Enter."
               className={cn(
                 "flex-1 min-w-0 text-xs rounded border px-2.5 py-1 font-mono focus:outline-none focus:ring-2",
                 filterQuery.error
@@ -4223,7 +3487,8 @@ export function LogsExplorer({
                   if (e.shiftKey) goPrevMatch(); else goNextMatch();
                 }
               }}
-              placeholder="Highlight (space=AND, ||, ( ), &quot;phrase&quot;)…"
+              placeholder='error timeout · error || warn · "exact phrase"'
+              title="Space = all words, || = either side, &quot;quotes&quot; = exact phrase. Enter / Shift+Enter steps through matches."
               className={cn(
                 "flex-1 min-w-0 text-xs rounded border px-2.5 py-1 font-mono focus:outline-none focus:ring-2",
                 highlightQuery.error
@@ -4302,7 +3567,7 @@ export function LogsExplorer({
 
           {/* Row 3: view toggles + count + height controls + fullscreen */}
           <div className="flex items-center gap-3 px-4 py-2 border-t border-slate-100">
-            {/* Terminal / Table / JSON toggle — available in all modes */}
+            {/* Terminal / Table toggle — available in all modes */}
             <div className="seg-sm">
               <button
                 type="button"
@@ -4332,20 +3597,9 @@ export function LogsExplorer({
               >
                 Table
               </button>
-              <button
-                type="button"
-                onClick={() => setViewMode("json")}
-                className={cn(
-                  "seg-sm-item",
-                  viewMode === "json" && "seg-sm-item-active"
-                )}
-                title="Show all entries as one JSON document"
-              >
-                JSON
-              </button>
             </div>
-            {/* Wrap toggle — available in terminal and JSON views */}
-            {(viewMode === "terminal" || viewMode === "json") && (
+            {/* Wrap toggle — terminal view only */}
+            {viewMode === "terminal" && (
               <button
                 type="button"
                 onClick={() => setWrapLines((w) => !w)}
@@ -4358,8 +3612,8 @@ export function LogsExplorer({
                 Wrap
               </button>
             )}
-            {/* Auto-scroll toggle — visible during tailing in terminal view */}
-            {viewMode === "terminal" && (
+            {/* Auto-scroll toggle — Tail mode, terminal view */}
+            {mode === "tail" && viewMode === "terminal" && (
               <button
                 type="button"
                 onClick={() => setAutoScroll((v) => !v)}
@@ -4476,9 +3730,9 @@ export function LogsExplorer({
                   : 0;
                 return (
                   <>
-                    {filtered.length} / {totalReceived.toLocaleString()}
+                    {filtered.length} / {totalReceived.toLocaleString("en-US")}
                     {dedupe && dedupeHidden > 0 && (
-                      <span className="text-amber-600"> (−{dedupeHidden.toLocaleString()})</span>
+                      <span className="text-amber-600"> (−{dedupeHidden.toLocaleString("en-US")})</span>
                     )}
                   </>
                 );
@@ -4513,11 +3767,11 @@ export function LogsExplorer({
                 <button
                   type="button"
                   onClick={() => {
-                    // Export is ALWAYS JSON regardless of the active view (Terminal/Table/JSON).
+                    // Export is ALWAYS JSON regardless of the active view (Terminal/Table).
                     // We export the full filtered entry objects (what the user currently sees in
                     // the buffer after Level/Filter/Search). `deepUnescapeJson` expands nested
-                    // stringified-JSON payloads so the file matches the JSON view's rendering
-                    // and is directly machine-parseable without a second JSON.parse pass.
+                    // stringified-JSON payloads so the file is directly machine-parseable
+                    // without a second JSON.parse pass.
                     const filtersActive = !!search || levelFilter !== "ALL";
                     const data = JSON.stringify(filtered.map((e) => deepUnescapeJson(e)), null, 2);
                     const blob = new Blob([data], { type: "application/json" });
@@ -4539,9 +3793,7 @@ export function LogsExplorer({
                   type="button"
                   onClick={() => {
                     let text: string;
-                    if (viewMode === "json") {
-                      text = JSON.stringify(filtered, null, 2);
-                    } else if (viewMode === "table") {
+                    if (viewMode === "table") {
                       text = filtered.map((e) => {
                         const src = (e.source ?? selectedSources[0] ?? "").padEnd(15);
                         const lvl = getLevel(e).padEnd(5);
@@ -4619,7 +3871,7 @@ export function LogsExplorer({
             if (h >= 200) { setTableHeight(h); saveHeight(h); }
           }}
           className={cn(
-            terminalView || viewMode === "json" ? "overflow-hidden" : "overflow-y-auto overflow-x-auto scrollbar-hidden mr-3",
+            terminalView ? "overflow-hidden" : "overflow-y-auto overflow-x-auto scrollbar-hidden mr-3",
             fullscreen ? "flex-1" : "resize-y min-h-[200px]"
           )}
           style={fullscreen ? undefined : { height: tableHeight }}
@@ -4677,33 +3929,6 @@ export function LogsExplorer({
                 evictedCount={filteredEvictedCount}
               />
             )
-          ) : viewMode === "json" ? (
-            !fetched ? (
-              <div className="flex items-center justify-center h-full min-h-[160px]">
-                <p className="text-sm text-slate-400">Select at least one source and click Tail Logs or Search</p>
-              </div>
-            ) : !deferredIsActive ? null : filtered.length === 0 && !searching ? (
-              <div className="p-8 text-center text-sm text-slate-400">
-                {entries.length === 0 ? "No log entries returned for this time range." : "No entries match the filter."}
-              </div>
-            ) : (
-              <JsonLogView
-                entries={filtered}
-                wrapLines={wrapLines}
-                keywords={keywords}
-                searchTerm={search}
-                activeEntryIdx={activeMatchIndex ?? -1}
-                matchIndices={matchIndices}
-                matchCase={highlightMatchCase}
-                wholeWord={highlightWholeWord}
-                onEntryClick={handleEntrySelect}
-                contextAnchorIdx={contextAnchorDisplay ?? -1}
-                selectedEntryIdx={selectedEntryIdx}
-                selectedScrollRequest={selectedScrollRequest}
-                autoScroll={autoScroll}
-                evictedCount={filteredEvictedCount}
-              />
-            )
           ) : !fetched ? (
             <div className="flex items-center justify-center h-full min-h-[160px]">
               <p className="text-sm text-slate-400">Select at least one source and click Tail Logs or Search</p>
@@ -4744,6 +3969,8 @@ export function LogsExplorer({
                       keywords={keywords}
                       onTransactionClick={(txId) => setDrilldown({ txId })}
                       onTimestampClick={onOpenContextTab}
+                      onPickField={canBuildFilter ? handlePickField : undefined}
+                      pickedKey={canBuildFilter && pickedField ? pickedFieldKey(pickedField.field) : null}
                       fullscreen={fullscreen}
                       showFullMessage={showFullMessage}
                       selected={selectedEntryIdx === globalIdx}
@@ -4761,8 +3988,8 @@ export function LogsExplorer({
           )}
         </div>
         {viewMode === "table" && <ScrollbarOverlay containerRef={scrollContainerRef} />}
-        {/* Floating Jump-to-bottom — Table view only. Terminal & JSON viewers
-            render their own button. Visible whenever the user has scrolled
+        {/* Floating Jump-to-bottom — Table view only. The terminal viewer renders
+            its own button. Visible whenever the user has scrolled
             away from the tail (manual scroll, click-to-inspect, match-nav).
             Click resumes auto-tail by snapping to the latest entries. */}
         {viewMode === "table" && fetched && filtered.length > 0 && !tableAtBottom && (
@@ -4834,7 +4061,7 @@ export function LogsExplorer({
             )}
             <span className="text-xs text-slate-600">
               {fetchProgress.loaded > 0
-                ? `Search complete — ${fetchProgress.loaded.toLocaleString()} entries loaded`
+                ? `Search complete — ${fetchProgress.loaded.toLocaleString("en-US")} entries loaded`
                 : "Search complete — no entries found for this time range"}
             </span>
           </div>
@@ -4903,11 +4130,11 @@ export function LogsExplorer({
                         : pausePending && !fetchProgress.paused
                           ? `Pausing — waiting for in-flight request…`
                           : fetchProgress.paused
-                            ? `Paused — ${fetchProgress.loaded.toLocaleString()} entries loaded`
+                            ? `Paused — ${fetchProgress.loaded.toLocaleString("en-US")} entries loaded`
                             : [
                               fetchProgress.source && `[${fetchProgress.source}]`,
                               fetchProgress.window && fetchProgress.window,
-                              fetchProgress.loaded > 0 && `${fetchProgress.loaded.toLocaleString()} entries`,
+                              fetchProgress.loaded > 0 && `${fetchProgress.loaded.toLocaleString("en-US")} entries`,
                               pct !== null && `${pct}%`,
                             ].filter(Boolean).join(' · ')}
                   </span>
@@ -5017,13 +4244,13 @@ export function LogsExplorer({
                 {loading
                   ? `Fetching…`
                   : lastUpdated
-                    ? `Updated ${lastUpdated.toLocaleTimeString()}`
+                    ? `Updated ${lastUpdated.toLocaleTimeString("en-US")}`
                     : `Starting…`}
               </span>
               {tailTotalReceived > 0 && (
                 <span className="text-xs text-slate-400">
-                  · {tailTotalReceived.toLocaleString()} total
-                  {tailDropped > 0 && ` · ${entries.length.toLocaleString()} in buffer`}
+                  · {tailTotalReceived.toLocaleString("en-US")} total
+                  {tailDropped > 0 && ` · ${entries.length.toLocaleString("en-US")} in buffer`}
                 </span>
               )}
             </div>
@@ -5231,7 +4458,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
     const id = _nextTabId++;
     const tabEnv = tabs.find((t) => t.id === activeId)?.config.env ?? "";
     const tabSources = tabs.find((t) => t.id === activeId)?.config.selectedSources ?? ["am-everything", "idm-everything"];
-    const shortTime = new Date(anchorTs).toLocaleTimeString(undefined, { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const shortTime = new Date(anchorTs).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
     const label = `±5s @${shortTime} (${tabEnv})`;
     const begin = toDatetimeLocal(beginTs, tzMode);
     const end = toDatetimeLocal(endTs, tzMode);
@@ -5287,8 +4514,6 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
   // Stable tabs summary for child LogsExplorer tab-switcher UI
   const tabsSummary = useMemo(() => tabs.map((t) => ({ id: t.id, label: t.label })), [tabs]);
 
-  const selectedEnv = environments.find((e) => e.name === cfg?.env);
-
   if (!mounted) {
     return <div className="h-64 flex items-center justify-center text-sm text-slate-400">Loading…</div>;
   }
@@ -5308,7 +4533,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                     value={cfg.env}
                     onChange={(e) => updateActiveConfig({ env: e.target.value, tailing: false })}
                     disabled={cfg.loading || cfg.tailing}
-                    className="block px-3 py-2.5 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 bg-white"
+                    className="block h-9 px-3 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 disabled:opacity-50 bg-white"
                   >
                     {environments.map((e) => (
                       <option key={e.name} value={e.name} disabled={!e.hasLogApi}>
@@ -5320,7 +4545,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
 
                 <div className="space-y-1">
                   <label className="label-xs">Log Source</label>
-                  <div className="flex gap-3 py-1">
+                  <div className="flex items-center gap-3 h-9">
                     {LOG_SOURCES.map((s) => (
                       <label key={s} className={cn("flex items-center gap-1.5 text-sm cursor-pointer select-none", (cfg.loading || cfg.tailing) ? "opacity-50 cursor-not-allowed" : "")}>
                         <input
@@ -5346,7 +4571,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                   <select
                     value={cfg.levelFilter}
                     onChange={(e) => updateActiveConfig({ levelFilter: e.target.value })}
-                    className="block px-3 py-2.5 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                    className="block h-9 px-3 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
                   >
                     {LEVEL_FILTERS.map((l) => (
                       <option key={l.value} value={l.value}>{l.label}</option>
@@ -5359,7 +4584,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                   <select
                     value={tzMode}
                     onChange={(e) => setTzMode(e.target.value as TzMode)}
-                    className="block px-3 py-2.5 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                    className="block h-9 px-3 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
                   >
                     {TZ_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -5372,7 +4597,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                   <select
                     value={tailBufferMax}
                     onChange={(e) => setTailBufferMax(Number(e.target.value))}
-                    className="block px-3 py-2.5 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                    className="block h-9 px-3 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
                   >
                     {TAIL_BUFFER_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -5385,7 +4610,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                   <select
                     value={cfg.tailSecs}
                     onChange={(e) => updateActiveConfig({ tailSecs: Number(e.target.value) as TailSecs })}
-                    className="block px-3 py-2.5 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
+                    className="block h-9 px-3 rounded-lg border border-slate-200 text-[13px] outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 bg-white"
                   >
                     {TAIL_SECS_OPTIONS.map((o) => (
                       <option key={o.value} value={o.value}>{o.label}</option>
@@ -5393,11 +4618,6 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
                   </select>
                 </div>
 
-                {selectedEnv && (
-                  <div className="pb-0.5">
-                    <EnvironmentBadge env={selectedEnv} />
-                  </div>
-                )}
               </div>
             </div>
           )}

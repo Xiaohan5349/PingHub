@@ -427,12 +427,7 @@ export function LogViewer({ logs, running, exitCode, onClear, expectedScopes }: 
           )}
           <button
             onClick={() => setFilterMode((f) => !f)}
-            className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded transition-colors shrink-0",
-              filterMode
-                ? "bg-sky-600 text-white"
-                : "text-slate-500 hover:text-slate-700",
-            )}
+            className={cn("toggle-chip", filterMode && "toggle-chip-on")}
             title={filterMode ? "Showing only matching lines" : "Showing all lines with highlights"}
           >
             Filter

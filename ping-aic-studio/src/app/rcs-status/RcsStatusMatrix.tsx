@@ -128,7 +128,7 @@ export function RcsStatusMatrix() {
         for (const e of startingEnvs) next.add(e);
         return next;
       });
-      setLog((prev) => prev + `\n--- ${new Date().toLocaleTimeString()} ${env ? `check ${env}` : "check-all"} ---\n`);
+      setLog((prev) => prev + `\n--- ${new Date().toLocaleTimeString("en-US")} ${env ? `check ${env}` : "check-all"} ---\n`);
       try {
         const res = await fetch(url, {
           method: "POST",
@@ -273,7 +273,7 @@ export function RcsStatusMatrix() {
         <span className="text-xs text-slate-500">
           {lastCheckedAt ? (
             <>
-              Last checked <span title={new Date(lastCheckedAt).toLocaleString()}>{formatAgo(lastCheckedAt)}</span>
+              Last checked <span title={new Date(lastCheckedAt).toLocaleString("en-US")}>{formatAgo(lastCheckedAt)}</span>
             </>
           ) : (
             "No checks yet"
@@ -360,7 +360,7 @@ export function RcsStatusMatrix() {
                           <div className={isSkipped ? "text-slate-400 line-through" : "text-slate-900"}>{env.label}</div>
                           <div className="text-xs text-slate-400">{env.env}</div>
                           {env.status?.checkedAt && !isSkipped && (
-                            <div className="text-[10px] text-slate-400" title={new Date(env.status.checkedAt).toLocaleString()}>
+                            <div className="text-[10px] text-slate-400" title={new Date(env.status.checkedAt).toLocaleString("en-US")}>
                               {formatAgo(env.status.checkedAt)}
                             </div>
                           )}

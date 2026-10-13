@@ -96,7 +96,12 @@ export async function POST(req: NextRequest) {
     });
     if (!res.ok) {
       const text = await res.text();
-      return NextResponse.json({ error: `HTTP ${res.status}: ${text}` }, { status: res.status });
+      // AIC answers a malformed or type-mismatched _queryFilter (e.g. `gt` on a
+      // string field) with a bare 500, so point at the filter when one was sent.
+      const hint = queryFilter && (res.status === 400 || res.status === 500)
+        ? " — check the queryFilter syntax (string values need quotes; gt/ge/lt/le only work on numeric fields)"
+        : "";
+      return NextResponse.json({ error: `HTTP ${res.status}: ${text}${hint}` }, { status: res.status });
     }
     const data = await res.json();
     return NextResponse.json(data);

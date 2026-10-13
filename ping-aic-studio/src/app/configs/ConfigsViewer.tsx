@@ -26,7 +26,7 @@ type SlotRef =
 
 function slotLabel(slot: SlotRef): string {
   if (slot.kind === "working") return "Working tree (current)";
-  return `${slot.shortSha} · ${new Date(slot.isoDate).toLocaleString()}`;
+  return `${slot.shortSha} · ${new Date(slot.isoDate).toLocaleString("en-US")}`;
 }
 import { WorkflowGraph } from "./WorkflowGraph";
 import { ManagedObjectUsagePanel, type Hit as ManagedObjectHit } from "@/app/data/browse/ManagedObjectUsagePanel";
@@ -351,7 +351,7 @@ function TreeView({ environment }: { environment: string }) {
         setFileContent(`// Failed to load version: ${data.error ?? `HTTP ${res.status}`}`);
       } else if (!data.exists) {
         setFileContent(
-          `// File did not exist at commit ${entry.shortSha} (${new Date(entry.isoDate).toLocaleString()}).`,
+          `// File did not exist at commit ${entry.shortSha} (${new Date(entry.isoDate).toLocaleString("en-US")}).`,
         );
       } else {
         setFileContent(data.content ?? "");
@@ -678,7 +678,7 @@ function TreeView({ environment }: { environment: string }) {
                               </span>
                               <span className="font-mono text-slate-400">{entry.shortSha}</span>
                               <span className="text-slate-500">·</span>
-                              <span className="text-slate-400">{new Date(entry.isoDate).toLocaleString()}</span>
+                              <span className="text-slate-400">{new Date(entry.isoDate).toLocaleString("en-US")}</span>
                               {slot && <span className="ml-auto text-[10px] font-mono text-amber-300">in {slot}</span>}
                             </div>
                             <div className="mt-0.5 text-slate-300 truncate" title={entry.subject}>
@@ -768,7 +768,7 @@ function TreeView({ environment }: { environment: string }) {
                               <span className="font-mono text-slate-400">{entry.shortSha}</span>
                               <span className="text-slate-500">·</span>
                               <span className="text-slate-400">
-                                {new Date(entry.isoDate).toLocaleString()}
+                                {new Date(entry.isoDate).toLocaleString("en-US")}
                               </span>
                               {isActive && <span className="ml-auto text-[10px] text-amber-300">● viewing</span>}
                             </div>
@@ -826,7 +826,7 @@ function TreeView({ environment }: { environment: string }) {
                 </svg>
                 <span>
                   Viewing version <span className="font-mono">{viewingShortSha}</span>
-                  {viewingDate && <> from {new Date(viewingDate).toLocaleString()}</>}
+                  {viewingDate && <> from {new Date(viewingDate).toLocaleString("en-US")}</>}
                 </span>
                 <button
                   type="button"
