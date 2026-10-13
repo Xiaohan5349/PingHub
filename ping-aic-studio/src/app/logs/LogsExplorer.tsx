@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, Fragment, startTransition, useDeferredValue, useCallback, useMemo, memo, createContext, useContext, type RefObject } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, Fragment, startTransition, useDeferredValue, useCallback, useMemo, memo, createContext, useContext, useId, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Environment } from "@/lib/fr-config-types";
@@ -9,7 +9,7 @@ import { useDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { logEntryMatchKey } from "@/lib/log-match-navigation";
 import { parseQuery } from "@/lib/log-query";
-import { appendClause, buildClause, flattenPayload, operatorsFor, type FilterOp, type PayloadField } from "@/lib/log-filter-builder";
+import { appendClause, buildClause, collectFieldPaths, flattenPayload, operatorsFor, type FieldType, type FilterOp, type PayloadField } from "@/lib/log-filter-builder";
 import { useBusyState } from "@/hooks/useBusyState";
 import { DEFAULT_LOG_SOURCES } from "@/lib/logs/log-sources";
 
@@ -1689,38 +1689,53 @@ function pickedFieldKey(f: PayloadField): string {
 }
 
 /**
- * Builds one `_queryFilter` clause from a field picked in an expanded table
- * row: optional `!`, an operator valid for the value's type, and an editable
- * value. Keyed by the parent on each pick so its state resets.
+ * Builds one `_queryFilter` clause: optional `!`, a path, an operator valid
+ * for the value's type, and an editable value. Opened either from a field
+ * picked in an expanded table row (path and type fixed) or blank from the
+ * `+ Condition` button (path typed, with suggestions from loaded entries).
+ * Keyed by the parent on each open so its state resets.
  */
 function FilterBuilderBar({
   field,
   part,
+  suggestions = [],
   hasFilter,
   onAdd,
   onClose,
 }: {
-  field: PayloadField;
+  /** Picked field; absent when opened blank. */
+  field?: PayloadField;
   /** Selected substring of a string value; defaults the operator to `co`. */
   part?: string;
-  /** Whether the Server filter already has content (shows the and/or join). */
+  /** Paths seen in loaded entries, offered when the path is typed. */
+  suggestions?: { path: string; type: FieldType }[];
+  /** Whether the queryFilter already has content (shows the and/or join). */
   hasFilter: boolean;
   onAdd: (clause: string, join: "and" | "or") => void;
   onClose: () => void;
 }) {
   const [op, setOp] = useState<FilterOp>(part ? "co" : "eq");
   const [negate, setNegate] = useState(false);
-  const [value, setValue] = useState(part ?? field.value);
+  const [path, setPath] = useState(field?.path ?? "");
+  const [manualType, setManualType] = useState<"string" | "number">("string");
+  const [value, setValue] = useState(part ?? field?.value ?? "");
   const [join, setJoin] = useState<"and" | "or">("and");
+  const listId = useId();
+  // A typed path takes its type from a matching suggestion; otherwise the
+  // text | number switch decides whether the value is quoted.
+  const knownType = field?.type ?? suggestions.find((s) => s.path === path.trim())?.type;
+  const type: FieldType = knownType ?? manualType;
+  const allowed = operatorsFor(type);
+  const effOp: FilterOp = allowed.includes(op) ? op : "eq";
+  const p = path.trim();
   const v = value.trim();
-  const invalid = op !== "pr" && (
-    field.type === "number" ? v === "" || !Number.isFinite(Number(v))
-      : field.type === "boolean" ? v !== "true" && v !== "false"
+  const pathInvalid = !p.startsWith("/");
+  const valueInvalid = effOp !== "pr" && (
+    type === "number" ? v === "" || !Number.isFinite(Number(v))
+      : type === "boolean" ? v !== "true" && v !== "false"
         : value === ""
   );
-  const clause = buildClause({ path: field.path, op, value, type: field.type, negate });
-
-  const allowed = operatorsFor(field.type);
+  const clause = buildClause({ path: p, op: effOp, value, type, negate });
 
   return (
     <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-100 text-xs">
@@ -1732,7 +1747,42 @@ function FilterBuilderBar({
       >
         !
       </button>
-      <span className="font-mono text-slate-600 truncate max-w-[18rem] shrink-0" title={field.path}>{field.path}</span>
+      {field ? (
+        <span className="font-mono text-slate-600 truncate max-w-[18rem] shrink-0" title={field.path}>{field.path}</span>
+      ) : (
+        <>
+          <input
+            type="text"
+            autoFocus
+            list={listId}
+            value={path}
+            onChange={(e) => setPath(e.target.value)}
+            placeholder="/payload/eventName"
+            title="JSON pointer of the field, e.g. /payload/eventName. Suggestions come from the loaded logs."
+            className={cn(
+              "w-56 min-w-0 rounded border px-2 py-0.5 font-mono focus:outline-none focus:ring-1",
+              path !== "" && pathInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
+            )}
+          />
+          <datalist id={listId}>
+            {suggestions.map((s) => <option key={s.path} value={s.path}>{s.type}</option>)}
+          </datalist>
+          {knownType === undefined && (
+            <div className="seg-sm" title="Text values are quoted; numbers are not">
+              {(["string", "number"] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setManualType(t)}
+                  className={cn("seg-sm-item", manualType === t && "seg-sm-item-active")}
+                >
+                  {t === "string" ? "text" : "number"}
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
       <div className="seg-sm">
         {ALL_FILTER_OPS.map((o) => (
           <button
@@ -1744,26 +1794,27 @@ function FilterBuilderBar({
               : o === "co" || o === "sw" ? "Text values only" : "Numeric values only"}
             className={cn(
               "seg-sm-item font-mono disabled:opacity-25 disabled:line-through",
-              op === o && "seg-sm-item-active",
+              effOp === o && "seg-sm-item-active",
             )}
           >
             {o}
           </button>
         ))}
       </div>
-      {op !== "pr" && (
+      {effOp !== "pr" && (
         <input
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
+          placeholder="value"
           className={cn(
             "w-56 min-w-0 rounded border px-2 py-0.5 font-mono focus:outline-none focus:ring-1",
-            invalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
+            valueInvalid && value !== "" ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
           )}
         />
       )}
       <span className="flex-1 min-w-0 truncate text-[11px] text-slate-400" title={clause}>
-        → <code className="font-mono text-slate-500">{clause}</code>
+        → <code className="font-mono text-slate-500">{p ? clause : "…"}</code>
       </span>
       {hasFilter && (
         <div className="seg-sm shrink-0" title="How to join this clause with the existing queryFilter">
@@ -1782,7 +1833,7 @@ function FilterBuilderBar({
       <button
         type="button"
         onClick={() => onAdd(clause, join)}
-        disabled={invalid}
+        disabled={pathInvalid || valueInvalid}
         className="px-3 py-1 text-xs font-medium bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50 transition-colors shrink-0"
       >
         Add to queryFilter
@@ -1997,9 +2048,15 @@ export function LogsExplorer({
   const [serverFilterRaw, setServerFilterRaw] = useState("");
   const serverFilterRawRef = useRef("");
   const [tailFilterSeq, setTailFilterSeq] = useState(0);
-  // Field picked from an expanded table row for the filter builder. `nonce`
-  // keys the builder so re-picking (even the same field) resets its state.
-  const [pickedField, setPickedField] = useState<{ field: PayloadField; part?: string; nonce: number } | null>(null);
+  // Filter builder state: a field picked from an expanded table row, or no
+  // field when opened blank via `+ Condition`. `nonce` keys the builder so
+  // re-opening (even on the same field) resets its state.
+  const [pickedField, setPickedField] = useState<{
+    field?: PayloadField;
+    part?: string;
+    suggestions?: { path: string; type: FieldType }[];
+    nonce: number;
+  } | null>(null);
   const handlePickField = useCallback((field: PayloadField, part?: string) => {
     setPickedField((p) => ({ field, part, nonce: (p?.nonce ?? 0) + 1 }));
   }, []);
@@ -3001,9 +3058,25 @@ export function LogsExplorer({
         placeholder={localSearch ? "Text search in the local archive…" : '_queryFilter, e.g. /payload/eventName eq "AM-ACCESS-ATTEMPT"'}
         title={localSearch
           ? "Plain-text search over the local archive's indexed fields."
-          : "Sent to AIC as-is as _queryFilter (CREST syntax: eq co sw lt le gt ge pr, and / or / !( )). Pick fields from an expanded table row to build it. Leave blank for everything."}
+          : "Sent to AIC as-is as _queryFilter (CREST syntax: eq co sw lt le gt ge pr, and / or / !( )). Build it with + Condition or by clicking a value in an expanded Table row. Leave blank for everything."}
         className="flex-1 min-w-0 text-xs rounded border border-slate-300 px-2.5 py-1 font-mono focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 disabled:opacity-50"
       />
+      {canBuildFilter && (
+        <button
+          type="button"
+          onClick={() => {
+            if (pickedField && !pickedField.field) { setPickedField(null); return; }
+            // Snapshot path suggestions from the most recent loaded entries.
+            const suggestions = collectFieldPaths(entries.slice(-500).map((e) => e.payload));
+            setPickedField((p) => ({ suggestions, nonce: (p?.nonce ?? 0) + 1 }));
+          }}
+          disabled={disabled}
+          title="Build a condition by typing a field path (or click a value in an expanded Table row)"
+          className={cn("toggle-chip", pickedField && !pickedField.field && "toggle-chip-on")}
+        >
+          + Condition
+        </button>
+      )}
       {serverFilterRaw !== "" && (
         <button
           type="button"
@@ -3321,6 +3394,7 @@ export function LogsExplorer({
               key={pickedField.nonce}
               field={pickedField.field}
               part={pickedField.part}
+              suggestions={pickedField.suggestions}
               hasFilter={serverFilterRaw.trim() !== ""}
               onAdd={addToServerFilter}
               onClose={() => setPickedField(null)}
@@ -3883,7 +3957,7 @@ export function LogsExplorer({
                       onTransactionClick={(txId) => setDrilldown({ txId })}
                       onTimestampClick={onOpenContextTab}
                       onPickField={canBuildFilter ? handlePickField : undefined}
-                      pickedKey={canBuildFilter && pickedField ? pickedFieldKey(pickedField.field) : null}
+                      pickedKey={canBuildFilter && pickedField?.field ? pickedFieldKey(pickedField.field) : null}
                       fullscreen={fullscreen}
                       showFullMessage={showFullMessage}
                       selected={selectedEntryIdx === globalIdx}
