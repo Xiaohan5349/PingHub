@@ -3097,8 +3097,12 @@ export function LogsExplorer({
           </div>
         )}
 
-        {/* Toolbar */}
-        <div className="flex flex-col border-b border-slate-100 bg-slate-50/50 shrink-0">
+        {/* Toolbar — pinned under the app header while the page scrolls, so the
+            queryFilter and filter builder stay reachable next to the logs. */}
+        <div className={cn(
+          "flex flex-col border-b border-slate-100 shrink-0",
+          fullscreen ? "bg-slate-50/50" : "sticky top-[var(--app-header-h,58px)] z-30 bg-slate-50 rounded-t-lg",
+        )}>
           {/* Row 1: mode toggle + tail/search controls + keyword highlights */}
           <div className="flex items-center gap-2 px-4 py-2">
             {/* Mode toggle */}
