@@ -1,7 +1,8 @@
 // Helpers for building an AIC Log API `_queryFilter` (CREST filter syntax) by
 // picking fields from a displayed log entry.
 //
-// Verified against a tenant's /monitoring/logs:
+// Verified against a tenant's /monitoring/logs (and /monitoring/logs/tail,
+// which applies the same _queryFilter server-side):
 // - eq / co / sw / pr and `!( )` work; string matching is case-insensitive.
 // - gt / ge / lt / le work on numeric fields only — on strings AIC returns 500,
 //   so they're offered for numbers only and numbers are sent unquoted.
