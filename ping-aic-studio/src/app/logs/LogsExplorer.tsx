@@ -3415,6 +3415,11 @@ export function LogsExplorer({
                     : "border-slate-300 focus:ring-sky-500"
               )}
             />
+            {search && !filterQuery.error && (
+              <span className="text-xs text-slate-500 whitespace-nowrap tabular-nums" title="Loaded entries that match / all loaded entries">
+                {filtered.length.toLocaleString("en-US")} of {levelFiltered.length.toLocaleString("en-US")}
+              </span>
+            )}
             {filterQuery.error && (
               <span className="text-xs text-rose-600 whitespace-nowrap" title={filterQuery.error}>
                 {filterQuery.error}
