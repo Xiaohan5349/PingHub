@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appendClause, buildClause, collectFieldPaths, flattenPayload, operatorsFor } from "./log-filter-builder";
+import { appendClause, buildClause, flattenPayload, operatorsFor } from "./log-filter-builder";
 
 describe("flattenPayload", () => {
     it("treats a plaintext payload as the single field /payload", () => {
@@ -29,21 +29,6 @@ describe("flattenPayload", () => {
     it("skips null leaves and escapes ~ and / in keys", () => {
         expect(flattenPayload({ gone: null, "a/b~c": "v" })).toEqual([
             { path: "/payload/a~1b~0c", value: "v", type: "string" },
-        ]);
-    });
-});
-
-describe("collectFieldPaths", () => {
-    it("lists distinct paths sorted, keeping the first type seen", () => {
-        expect(collectFieldPaths([
-            { eventName: "X", response: { status: 200 } },
-            { eventName: "Y", response: { status: "ok" }, principal: ["a"] },
-            "SEVERE: plain text",
-        ])).toEqual([
-            { path: "/payload", type: "string" },
-            { path: "/payload/eventName", type: "string" },
-            { path: "/payload/principal", type: "string" },
-            { path: "/payload/response/status", type: "number" },
         ]);
     });
 });

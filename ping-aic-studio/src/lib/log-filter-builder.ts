@@ -1,8 +1,7 @@
 // Helpers for building an AIC Log API `_queryFilter` (CREST filter syntax) by
 // picking fields from a displayed log entry.
 //
-// Verified against a tenant's /monitoring/logs (and /monitoring/logs/tail,
-// which applies the same _queryFilter server-side):
+// Verified against a tenant's /monitoring/logs:
 // - eq / co / sw / pr and `!( )` work; string matching is case-insensitive.
 // - gt / ge / lt / le work on numeric fields only — on strings AIC returns 500,
 //   so they're offered for numbers only and numbers are sent unquoted.
@@ -46,18 +45,6 @@ export function flattenPayload(payload: unknown): PayloadField[] {
     };
     walk(payload, "/payload");
     return out;
-}
-
-/**
- * Distinct leaf paths across several payloads, sorted, for suggesting paths
- * when a clause is typed by hand. A path keeps the type it was first seen with.
- */
-export function collectFieldPaths(payloads: unknown[]): { path: string; type: FieldType }[] {
-    const types = new Map<string, FieldType>();
-    for (const p of payloads) {
-        for (const f of flattenPayload(p)) if (!types.has(f.path)) types.set(f.path, f.type);
-    }
-    return [...types].sort(([a], [b]) => a.localeCompare(b)).map(([path, type]) => ({ path, type }));
 }
 
 export function operatorsFor(type: FieldType): FilterOp[] {
