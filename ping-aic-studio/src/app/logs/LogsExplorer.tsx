@@ -227,7 +227,7 @@ export interface TabConfig {
   /** Incremented to trigger a transaction trace fetch. */
   txSeq?: number;
   // View prefs (persisted per tab)
-  viewMode?: "terminal" | "table" | "json"; // "json": removed view, may still be saved; read as table
+  viewMode?: "terminal" | "table" | "raw" | "json"; // "json": removed view, may still be saved; read as table
   /** @deprecated — use viewMode. Retained so old persisted tabs still open on the right view. */
   terminalView?: boolean;
   wrapLines?: boolean;
@@ -2082,8 +2082,9 @@ export function LogsExplorer({
   const [showFullMessage, setShowFullMessage] = useState(false);
   // View prefs live in TabConfig so they persist per tab across reloads.
   // A tab saved with the removed JSON view ("json") opens in Table.
-  const viewMode: "terminal" | "table" =
-    (config.viewMode ?? (config.terminalView === false ? "table" : "terminal")) === "terminal" ? "terminal" : "table";
+  const savedViewMode = config.viewMode ?? (config.terminalView === false ? "table" : "terminal");
+  const viewMode: "terminal" | "table" | "raw" =
+    savedViewMode === "terminal" || savedViewMode === "raw" ? savedViewMode : "table";
   const terminalView = viewMode === "terminal";
   const wrapLines = config.wrapLines ?? false;
   const dedupe = config.dedupe ?? false;
@@ -2091,7 +2092,7 @@ export function LogsExplorer({
   // always follow the newest page as it streams in; scrolling away or clicking
   // an entry still pauses that, and Jump to bottom resumes it.
   const autoScroll = mode !== "tail" || (config.autoScroll ?? true);
-  const setViewMode = useCallback((v: "terminal" | "table") => {
+  const setViewMode = useCallback((v: "terminal" | "table" | "raw") => {
     // Also write terminalView for backward compat with any pre-existing persisted state.
     onConfigChange({ viewMode: v, terminalView: v === "terminal" });
   }, [onConfigChange]);
@@ -3554,6 +3555,17 @@ export function LogsExplorer({
               >
                 Table
               </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("raw")}
+                title="Log entries exactly as AIC returned them, one JSON object per line"
+                className={cn(
+                  "seg-sm-item",
+                  viewMode === "raw" && "seg-sm-item-active"
+                )}
+              >
+                Raw
+              </button>
             </div>
             {/* Wrap toggle — terminal view only */}
             {viewMode === "terminal" && (
@@ -3736,7 +3748,9 @@ export function LogsExplorer({
                   type="button"
                   onClick={() => {
                     let text: string;
-                    if (viewMode === "table") {
+                    if (viewMode === "raw") {
+                      text = filtered.map((e) => JSON.stringify(e)).join("\n");
+                    } else if (viewMode === "table") {
                       text = filtered.map((e) => {
                         const src = (e.source ?? selectedSources[0] ?? "").padEnd(15);
                         const lvl = getLevel(e).padEnd(5);
@@ -3880,6 +3894,13 @@ export function LogsExplorer({
             <div className="p-8 text-center text-sm text-slate-400">
               {entries.length === 0 ? "No log entries returned for this time range." : "No entries match the filter."}
             </div>
+          ) : viewMode === "raw" ? (
+            // Entries are the Log API `result` items untouched, so this is the raw response.
+            <div className="code-surface min-h-full px-4 py-1 bg-slate-900 text-slate-200 font-mono text-xs leading-5 select-text">
+              {pageEntries.map((e, i) => (
+                <div key={pageStartIdx + i} className="py-1.5 border-b border-slate-800 whitespace-pre-wrap break-all">{JSON.stringify(e)}</div>
+              ))}
+            </div>
           ) : (
             <table className="text-xs border-collapse" style={{ tableLayout: "fixed", width: "100%", minWidth: 700 }}>
               <thead className="sticky top-0 z-10">
@@ -3930,12 +3951,12 @@ export function LogsExplorer({
             </table>
           )}
         </div>
-        {viewMode === "table" && <ScrollbarOverlay containerRef={scrollContainerRef} />}
+        {viewMode !== "terminal" && <ScrollbarOverlay containerRef={scrollContainerRef} />}
         {/* Floating Jump-to-bottom — Table view only. The terminal viewer renders
             its own button. Visible whenever the user has scrolled
             away from the tail (manual scroll, click-to-inspect, match-nav).
             Click resumes auto-tail by snapping to the latest entries. */}
-        {viewMode === "table" && fetched && filtered.length > 0 && !tableAtBottom && (
+        {viewMode !== "terminal" && fetched && filtered.length > 0 && !tableAtBottom && (
           <button
             type="button"
             onClick={() => {
@@ -3960,8 +3981,8 @@ export function LogsExplorer({
           </button>
         )}
 
-        {/* Pagination controls — table view only */}
-        {viewMode === "table" && fetched && filtered.length > 0 && (
+        {/* Pagination controls — Table and Raw views */}
+        {viewMode !== "terminal" && fetched && filtered.length > 0 && (
           <div className="flex items-center justify-between px-4 py-2 border-t border-slate-100 bg-slate-50/50 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500">
