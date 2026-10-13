@@ -9,11 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Logs: build the server filter from log fields.** Expanded table rows list the payload as fields; click a value (or select part of a text value) to build a clause with `!`, an operator (`eq`, `co`, `sw`, `pr`, and `gt`/`ge`/`lt`/`le` for numbers) and an `and`/`or` join, then add it to the Server filter. Raw shows the JSON as before.
+- **Logs: build the queryFilter from log fields.** Expanded table rows list the payload as fields; click a value (or select part of a text value) to build a clause with `!`, an operator (`eq`, `co`, `sw`, `pr`, and `gt`/`ge`/`lt`/`le` for numbers) and an `and`/`or` join, then add it to the queryFilter box. Operators that do not fit the value type are shown struck through. Raw shows the JSON as before.
 
 ### Changed
 
-- **Logs: Server filter replaces Keywords.** The box is sent to AIC as-is as `_queryFilter` and now applies to Tail as well as Search (Enter restarts a running tail). Keywords guessed a filter that missed values outside `message` and `eventName` in JSON logs. Local search still uses the box as plain text.
+- **Logs: queryFilter box replaces Keywords.** It is sent to AIC as-is as `_queryFilter` and now applies to Tail as well as Search (Enter or Clear restarts a running tail). Keywords guessed a filter that missed values outside `message` and `eventName` in JSON logs. Local search still uses the box as plain text.
+
+- **Logs: the in-page Filter box is now "Search loaded".** It only narrows logs already on the page and never queries AIC; its placeholder and Highlight's now show plain examples instead of the operator shorthand.
 
 - **New look: Bento theme with light and dark modes.** Follows the OS setting by default; the header toggle switches and remembers the choice. Light uses warm paper tones, dark uses graphite; code, log, diff and graph panes follow the theme.
 - **Grouped navigation.** The 14 pages are grouped into Dashboard, Pipeline, Explore, Observe and Setup menus, with the current group's pages as a second row of tabs.
