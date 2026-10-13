@@ -1618,7 +1618,7 @@ const EntryRow = memo(function EntryRow({
             <div className="flex items-center gap-2 px-4 pt-2">
               {onPickField && !rawView && (
                 <span className="text-[10px] text-slate-400">
-                  Click a value to build a queryFilter clause — select part of a text value to use just that part
+                  Click a field or value to build a queryFilter clause — select part of a text value to use just that part
                 </span>
               )}
               <div className="seg-sm ml-auto">
@@ -1644,7 +1644,11 @@ const EntryRow = memo(function EntryRow({
                   <tbody>
                     {fields.map((f, i) => (
                       <tr key={i} className={cn("align-top", pickedKey === pickedFieldKey(f) && "bg-sky-900/60")}>
-                        <td className="px-2 text-slate-400 whitespace-nowrap" title={f.path}>
+                        <td
+                          className={cn("px-2 text-slate-400 whitespace-nowrap", onPickField && "cursor-pointer hover:bg-slate-800")}
+                          title={f.path}
+                          onClick={onPickField && (() => onPickField(f))}
+                        >
                           {f.path.replace(/^\/payload\/?/, "") || "payload"}
                         </td>
                         <td
