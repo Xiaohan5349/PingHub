@@ -1817,6 +1817,55 @@ function FilterBuilderBar({
   );
 }
 
+// ── Custom time range input ─────────────────────────────────────────────────
+
+/**
+ * One end of the custom time range. `value` is always a datetime-local string
+ * in the display zone; "text" mode edits it as a typed or pasted timestamp
+ * (e.g. a log entry's `2026-10-13T02:08:30.383Z`) and writes "" while the text
+ * doesn't parse, so Search reports the range as incomplete. Keyed by mode so
+ * the text draft restarts from `value` on each switch.
+ */
+function CustomTimeInput({ mode, value, onChange, tz, round, invalid, disabled }: {
+  mode: "pick" | "text";
+  value: string;
+  onChange: (v: string) => void;
+  tz: TzMode;
+  /** floor for the range start, ceil for the end, so a pasted entry stays in range. */
+  round: "floor" | "ceil";
+  invalid: boolean;
+  disabled: boolean;
+}) {
+  const [draft, setDraft] = useState(() => (value ? fromDatetimeLocal(value, tz) : ""));
+  const draftInvalid = mode === "text" && draft.trim() !== "" && !value;
+  const cls = cn(
+    "rounded border px-1.5 py-0.5 text-[11px] font-mono focus:outline-none focus:ring-1",
+    invalid || draftInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
+  );
+  if (mode === "pick") {
+    return (
+      <input type="datetime-local" step="1" value={value} onChange={(e) => onChange(e.target.value)} disabled={disabled} className={cls} />
+    );
+  }
+  return (
+    <input
+      type="text"
+      value={draft}
+      onChange={(e) => {
+        setDraft(e.target.value);
+        const d = parsePastedTimestamp(e.target.value, tz === "local" ? "local" : "utc", round);
+        onChange(d ? toDatetimeLocal(d.toISOString(), tz) : "");
+      }}
+      placeholder="2026-10-13T02:08:30.383Z"
+      title={draftInvalid
+        ? "Not a timestamp. Use e.g. 2026-10-13T02:08:30.383Z, 2026-10-13 02:08:30, or epoch seconds/ms."
+        : "ISO timestamp (Z or ±hh:mm), a zoneless time in the current time zone, or epoch seconds/ms."}
+      disabled={disabled}
+      className={cn(cls, "w-48")}
+    />
+  );
+}
+
 // ── Transaction drill-down modal ────────────────────────────────────────────
 
 function TransactionDrilldown({
@@ -1997,6 +2046,8 @@ export function LogsExplorer({
   const { env, selectedSources, sourcesError, levelFilter, mode, tailSecs, tailing, loading, preset, customBegin, customEnd, searchSeq, searching } = config;
   const { confirm } = useDialog();
   const tz = useContext(TzContext);
+  // Custom time range: date picker or a typed / pasted timestamp.
+  const [timeInputMode, setTimeInputMode] = useState<"pick" | "text">("pick");
   const tailBufferMax = useContext(TailBufferContext);
   const tailBufferMaxRef = useRef(tailBufferMax);
   useEffect(() => { tailBufferMaxRef.current = tailBufferMax; }, [tailBufferMax]);
@@ -3177,42 +3228,39 @@ export function LogsExplorer({
                   </select>
                   {preset === "custom" && (
                     <>
-                      <input
-                        type="datetime-local"
-                        step="1"
+                      <div className="seg-sm" title="Pick a time, or type / paste a timestamp such as 2026-10-13T02:08:30.383Z">
+                        {(["pick", "text"] as const).map((m) => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => setTimeInputMode(m)}
+                            disabled={searching}
+                            className={cn("seg-sm-item", timeInputMode === m && "seg-sm-item-active")}
+                          >
+                            {m === "pick" ? "Pick" : "Text"}
+                          </button>
+                        ))}
+                      </div>
+                      <CustomTimeInput
+                        key={`begin-${timeInputMode}`}
+                        mode={timeInputMode}
                         value={customBegin}
-                        onChange={(e) => onConfigChange({ customBegin: e.target.value })}
-                        onPaste={(e) => {
-                          const d = parsePastedTimestamp(e.clipboardData.getData("text"), tz === "local" ? "local" : "utc", "floor");
-                          if (!d) return;
-                          e.preventDefault();
-                          onConfigChange({ customBegin: toDatetimeLocal(d.toISOString(), tz) });
-                        }}
-                        title="Pick a time, or paste a log timestamp such as 2026-10-13T02:08:30.383Z"
+                        onChange={(v) => onConfigChange({ customBegin: v })}
+                        tz={tz}
+                        round="floor"
+                        invalid={customRangeInvalid}
                         disabled={searching}
-                        className={cn(
-                          "rounded border px-1.5 py-0.5 text-[11px] font-mono focus:outline-none focus:ring-1",
-                          customRangeInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
-                        )}
                       />
                       <span className="text-slate-400 text-[11px]">→</span>
-                      <input
-                        type="datetime-local"
-                        step="1"
+                      <CustomTimeInput
+                        key={`end-${timeInputMode}`}
+                        mode={timeInputMode}
                         value={customEnd}
-                        onChange={(e) => onConfigChange({ customEnd: e.target.value })}
-                        onPaste={(e) => {
-                          const d = parsePastedTimestamp(e.clipboardData.getData("text"), tz === "local" ? "local" : "utc", "ceil");
-                          if (!d) return;
-                          e.preventDefault();
-                          onConfigChange({ customEnd: toDatetimeLocal(d.toISOString(), tz) });
-                        }}
-                        title="Pick a time, or paste a log timestamp such as 2026-10-13T02:08:30.383Z"
+                        onChange={(v) => onConfigChange({ customEnd: v })}
+                        tz={tz}
+                        round="ceil"
+                        invalid={customRangeInvalid}
                         disabled={searching}
-                        className={cn(
-                          "rounded border px-1.5 py-0.5 text-[11px] font-mono focus:outline-none focus:ring-1",
-                          customRangeInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
-                        )}
                       />
                       {customRangeInvalid && (
                         <span className="text-[11px] text-rose-600 whitespace-nowrap" title="End time must be after start time">
