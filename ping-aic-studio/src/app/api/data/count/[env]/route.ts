@@ -135,7 +135,7 @@ async function probeType(
       cookie = data.pagedResultsCookie ?? null;
       if (!cookie) break;
       if (total >= PAGINATION_COUNT_CAP) {
-        return { count: null, reason: `${exact.reason}; ${estimate.reason}; pagination → >${PAGINATION_COUNT_CAP.toLocaleString()} (capped after ${pages} pages)` };
+        return { count: null, reason: `${exact.reason}; ${estimate.reason}; pagination → >${PAGINATION_COUNT_CAP.toLocaleString("en-US")} (capped after ${pages} pages)` };
       }
     } catch (e) {
       return { count: null, reason: `${exact.reason}; ${estimate.reason}; pagination → ${(e as Error).message}` };

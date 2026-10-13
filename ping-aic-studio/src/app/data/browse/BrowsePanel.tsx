@@ -210,7 +210,7 @@ export function BrowsePanel({ environments }: { environments: Environment[] }) {
           <label className="text-xs text-slate-500 font-medium">
             Environment
             {envLastPulledAt && (
-              <span className="ml-2 text-slate-400 font-normal" title={new Date(envLastPulledAt).toLocaleString()}>
+              <span className="ml-2 text-slate-400 font-normal" title={new Date(envLastPulledAt).toLocaleString("en-US")}>
                 · last pulled {timeAgoShort(envLastPulledAt)}
               </span>
             )}

@@ -222,7 +222,7 @@ export function PullPanel({
             <label className="text-xs text-slate-500 font-medium">
               Environment
               {envLastPulledAt && (
-                <span className="ml-2 text-slate-400 font-normal" title={new Date(envLastPulledAt).toLocaleString()}>
+                <span className="ml-2 text-slate-400 font-normal" title={new Date(envLastPulledAt).toLocaleString("en-US")}>
                   · last pulled {timeAgoShort(envLastPulledAt)}
                 </span>
               )}
@@ -345,7 +345,7 @@ export function PullPanel({
                 {isProbing ? (
                   <span className="text-[10px] text-sky-700 tabular-nums">
                     {prog
-                      ? <>probing… {prog.fetched.toLocaleString()}<span className="text-sky-400">/p{prog.pages}</span></>
+                      ? <>probing… {prog.fetched.toLocaleString("en-US")}<span className="text-sky-400">/p{prog.pages}</span></>
                       : "probing…"}
                   </span>
                 ) : has ? (
@@ -360,11 +360,11 @@ export function PullPanel({
                     const title = c === null
                       ? (reason ?? "Tenant declined to report a count")
                       : isSnapshotSourced
-                        ? `${c.toLocaleString()} records — ${reason}`
-                        : `${c.toLocaleString()} records`;
+                        ? `${c.toLocaleString("en-US")} records — ${reason}`
+                        : `${c.toLocaleString("en-US")} records`;
                     return (
                       <span className={className} title={title}>
-                        {c === null ? "unknown" : isSnapshotSourced ? `${c.toLocaleString()}*` : c.toLocaleString()}
+                        {c === null ? "unknown" : isSnapshotSourced ? `${c.toLocaleString("en-US")}*` : c.toLocaleString("en-US")}
                       </span>
                     );
                   })()

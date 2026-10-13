@@ -564,7 +564,7 @@ function FrConfigControls({
     return res.json() as Promise<{ stdout: string; stderr: string; exitCode: number | null }>;
   };
 
-  const stamp = (msg: string) => `[${new Date().toLocaleTimeString()}] ${msg}`;
+  const stamp = (msg: string) => `[${new Date().toLocaleTimeString("en-US")}] ${msg}`;
 
   const startPolling = useCallback(async (useDcc: boolean) => {
     pollingRef.current = true;

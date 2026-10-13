@@ -39,7 +39,7 @@ function toLogModel(job: LogPullJob): JobCardModel {
         kind: "logs",
         progress: job.progress.map((p) => {
             const live = p.status === "running" && p.lastTimestamp
-                ? `${new Date(p.lastTimestamp).toLocaleTimeString()} · ${p.lastMessage ?? ""}`.trim()
+                ? `${new Date(p.lastTimestamp).toLocaleTimeString("en-US")} · ${p.lastMessage ?? ""}`.trim()
                 : undefined;
             return {
                 label: p.source,
@@ -165,7 +165,7 @@ export function LogPullView({ environments }: { environments: { name: string; la
                                     <input type="checkbox" checked={sources.has(s)} onChange={() => toggleSource(s)} className="accent-sky-600" />
                                     <span className="font-mono text-slate-700 flex-1 truncate">{s}</span>
                                     {sm?.entryCount != null
-                                        ? <span className="text-[10px] text-slate-400 tabular-nums" title={sm.lastPulledTo ? `last pulled up to ${new Date(sm.lastPulledTo).toLocaleString()}` : undefined}>{sm.entryCount.toLocaleString()}</span>
+                                        ? <span className="text-[10px] text-slate-400 tabular-nums" title={sm.lastPulledTo ? `last pulled up to ${new Date(sm.lastPulledTo).toLocaleString("en-US")}` : undefined}>{sm.entryCount.toLocaleString("en-US")}</span>
                                         : null}
                                 </label>
                             );

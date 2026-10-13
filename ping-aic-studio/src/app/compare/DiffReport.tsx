@@ -3359,7 +3359,7 @@ export function DiffReport({ report, tasks = [], mode = "compare", dryRunMode, s
               <span className="mx-1.5 text-slate-400">→</span>
               <span className="">{targetLabel}</span>
             </h2>
-            <span className="text-xs text-slate-400">{new Date(report.generatedAt).toLocaleString()}</span>
+            <span className="text-xs text-slate-400">{new Date(report.generatedAt).toLocaleString("en-US")}</span>
           </div>
 
           {/* Stats cards */}

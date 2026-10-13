@@ -1062,7 +1062,7 @@ export function ScriptFileViewer({ content, fileName, environment, relPath, high
     const opts: Intl.DateTimeFormatOptions = sameYear
       ? { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }
       : { year: "numeric", month: "short", day: "numeric" };
-    return d.toLocaleDateString(undefined, opts);
+    return d.toLocaleDateString("en-US", opts);
   };
 
   return (

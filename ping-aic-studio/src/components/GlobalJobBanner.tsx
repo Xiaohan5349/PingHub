@@ -30,7 +30,7 @@ function dataSummary(jobs: DataPullJob[]): string {
   const done = jobs.reduce((a, j) => a + j.progress.filter((p) => p.status === "done").length, 0);
   const units = jobs.reduce((a, j) => a + j.progress.length, 0);
   const head = `${jobs.length > 1 ? `${jobs.length} ` : ""}managed-object pull${jobs.length === 1 ? "" : "s"}`;
-  return `${head} · ${records.toLocaleString()} records${units ? ` (${done}/${units} types)` : ""} — ${uniqEnvs(jobs)}`;
+  return `${head} · ${records.toLocaleString("en-US")} records${units ? ` (${done}/${units} types)` : ""} — ${uniqEnvs(jobs)}`;
 }
 
 function logSummary(jobs: LogPullJob[]): string {
@@ -38,7 +38,7 @@ function logSummary(jobs: LogPullJob[]): string {
   const done = jobs.reduce((a, j) => a + j.progress.filter((p) => p.status === "done").length, 0);
   const units = jobs.reduce((a, j) => a + j.progress.length, 0);
   const head = `${jobs.length > 1 ? `${jobs.length} ` : ""}log pull${jobs.length === 1 ? "" : "s"}`;
-  return `${head} · ${events.toLocaleString()} events${units ? ` (${done}/${units} sources)` : ""} — ${uniqEnvs(jobs)}`;
+  return `${head} · ${events.toLocaleString("en-US")} events${units ? ` (${done}/${units} sources)` : ""} — ${uniqEnvs(jobs)}`;
 }
 
 export function GlobalJobBanner() {

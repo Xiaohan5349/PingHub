@@ -102,7 +102,7 @@ function LastPullModal({
   }, [open, env, scopes]);
 
   const formatted = (() => {
-    try { return new Date(timestamp).toLocaleString(); } catch { return timestamp; }
+    try { return new Date(timestamp).toLocaleString("en-US"); } catch { return timestamp; }
   })();
 
   return (

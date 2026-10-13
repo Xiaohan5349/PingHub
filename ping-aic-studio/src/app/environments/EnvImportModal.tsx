@@ -177,7 +177,7 @@ export function EnvImportModal({ open, onOpenChange, liveEnvironments, onImporte
                                                         : "plaintext"
                                                     : "redacted"}
                                             </span>
-                                            {bundle.exportedAt && <> · exported {new Date(bundle.exportedAt).toLocaleString()}</>}
+                                            {bundle.exportedAt && <> · exported {new Date(bundle.exportedAt).toLocaleString("en-US")}</>}
                                             {bundle.appVersion && <> · v{bundle.appVersion}</>}
                                         </div>
                                     </div>

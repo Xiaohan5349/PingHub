@@ -20,7 +20,7 @@ function OutcomeBars({ outcomes, visits }: { outcomes: Record<string, number>; v
                         <span className="flex-1 h-3.5 rounded bg-slate-100 overflow-hidden">
                             <span className={`block h-full rounded ${palette[i % palette.length]}`} style={{ width: `${pct}%` }} />
                         </span>
-                        <span className="w-24 text-right tabular-nums text-slate-500">{count.toLocaleString()} · {pct}%</span>
+                        <span className="w-24 text-right tabular-nums text-slate-500">{count.toLocaleString("en-US")} · {pct}%</span>
                     </div>
                 );
             })}
@@ -146,7 +146,7 @@ export function NodeOutcomeTree({ structure }: { structure: NodeStructure }) {
                 {reused && !isRoot ? <span className="text-[10px] italic text-amber-700">· reused</span> : null}
                 {cyclic ? <span className="text-[10px] italic text-slate-400">↻ shown above</span> : null}
                 <span className="ml-auto flex items-center gap-2">
-                    {edge ? <span className="text-xs tabular-nums text-slate-500">{edge.invocations.toLocaleString()}×</span> : null}
+                    {edge ? <span className="text-xs tabular-nums text-slate-500">{edge.invocations.toLocaleString("en-US")}×</span> : null}
                     {!cyclic ? (
                         <>
                             <button
@@ -200,7 +200,7 @@ export function NodeOutcomeTree({ structure }: { structure: NodeStructure }) {
                 <Row depth={depth} caret={expanded ? "▾" : "▸"} onClick={() => toggle(key)}>
                     <span className="text-slate-300">•</span>
                     <span className="text-slate-800">{n.displayName}</span>
-                    <span className="ml-auto text-xs tabular-nums text-slate-500">{n.visits.toLocaleString()} visits</span>
+                    <span className="ml-auto text-xs tabular-nums text-slate-500">{n.visits.toLocaleString("en-US")} visits</span>
                 </Row>
                 {expanded ? (
                     <div className="border-b border-slate-50 bg-slate-50/60" style={{ paddingLeft: 12 + (depth + 1) * 18 + 16, paddingRight: 12, paddingTop: 6, paddingBottom: 8 }}>

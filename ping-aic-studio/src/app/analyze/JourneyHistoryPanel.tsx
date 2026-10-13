@@ -79,11 +79,11 @@ type ScanReport = JourneyHistoryReport & {
     attemptsTruncated?: boolean;
 };
 
-const num = (n: number) => n.toLocaleString();
+const num = (n: number) => n.toLocaleString("en-US");
 
 function fmtWindowTs(iso: string): string {
     const d = new Date(iso);
-    return Number.isNaN(d.getTime()) ? iso : d.toLocaleString();
+    return Number.isNaN(d.getTime()) ? iso : d.toLocaleString("en-US");
 }
 
 /** Human-readable elapsed time: "820 ms", "12s", "3m 5s", "1h 2m". */
@@ -101,7 +101,7 @@ function fmtDuration(ms: number): string {
 function fmtEventTs(iso: string): string {
     const d = new Date(iso);
     if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleString(undefined, { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    return d.toLocaleString("en-US", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit" });
 }
 
 /** Live feed of the most-recent matched events while a report is running. */
@@ -769,7 +769,7 @@ export function JourneyHistoryPanel({ environments }: { environments: { name: st
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                             <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-300 border-t-sky-600" />
                             {scanProgress
-                                ? <span>Scanning… page {scanProgress.page} · {scanProgress.rawFetched.toLocaleString()} raw · {scanProgress.matched.toLocaleString()} journey events</span>
+                                ? <span>Scanning… page {scanProgress.page} · {scanProgress.rawFetched.toLocaleString("en-US")} raw · {scanProgress.matched.toLocaleString("en-US")} journey events</span>
                                 : <span>Starting scan…</span>}
                         </div>
                     ) : null}
@@ -817,13 +817,13 @@ export function JourneyHistoryPanel({ environments }: { environments: { name: st
                                 {job.progress.windowsTotal && job.progress.windowsTotal > 1
                                     ? <>windows {job.progress.windowsDone ?? 0}/{job.progress.windowsTotal} done
                                         {job.progress.windowsInFlight ? ` · ${job.progress.windowsInFlight} paging` : ""}
-                                        {job.progress.livePages ? ` · ${job.progress.livePages.toLocaleString()} pages fetched` : ""}
-                                        {` · ${job.progress.matched.toLocaleString()} journey events`}</>
-                                    : <>page {job.progress.page} · {job.progress.rawFetched.toLocaleString()} raw · {job.progress.matched.toLocaleString()} journey events</>}
+                                        {job.progress.livePages ? ` · ${job.progress.livePages.toLocaleString("en-US")} pages fetched` : ""}
+                                        {` · ${job.progress.matched.toLocaleString("en-US")} journey events`}</>
+                                    : <>page {job.progress.page} · {job.progress.rawFetched.toLocaleString("en-US")} raw · {job.progress.matched.toLocaleString("en-US")} journey events</>}
                             </span>
                         ) : jobPaused ? (
                             <span className="text-slate-600">
-                                {job.progress.matched.toLocaleString()} journey events staged
+                                {job.progress.matched.toLocaleString("en-US")} journey events staged
                                 {job.progress.truncated ? " · cap reached" : ""} — resume to continue
                             </span>
                         ) : null}
@@ -905,7 +905,7 @@ export function JourneyHistoryPanel({ environments }: { environments: { name: st
                                             <td className="px-3 py-1.5">{h.source}{h.rollupOnly ? " · rates" : ""}</td>
                                             <td className="px-3 py-1.5 whitespace-nowrap">{h.window ? `${fmtEventTs(h.window.from)} → ${fmtEventTs(h.window.to)}` : "—"}</td>
                                             <td className="px-3 py-1.5">{h.selectedJourneys && h.selectedJourneys.length ? `${h.selectedJourneys.length} selected` : "all"}</td>
-                                            <td className="px-3 py-1.5 text-right">{h.attempts.toLocaleString()}</td>
+                                            <td className="px-3 py-1.5 text-right">{h.attempts.toLocaleString("en-US")}</td>
                                             <td className="px-3 py-1.5 text-right">{h.attempts ? `${fr.toFixed(1)}%` : "—"}</td>
                                             <td className="px-3 py-1.5 text-right whitespace-nowrap">{typeof h.durationMs === "number" ? fmtDuration(h.durationMs) : "—"}</td>
                                             <td className="px-3 py-1.5 text-right">
@@ -1038,7 +1038,7 @@ export function JourneyHistoryPanel({ environments }: { environments: { name: st
                                                                     {detail.topFailureNodes.map((n) => (
                                                                         <li key={n.node} className="flex items-center gap-2">
                                                                             <span className="font-mono text-slate-700">{n.node}</span>
-                                                                            <span className="text-rose-700">{n.count.toLocaleString()}</span>
+                                                                            <span className="text-rose-700">{n.count.toLocaleString("en-US")}</span>
                                                                             <span className="text-slate-400">({p.fail ? Math.round((n.count / p.fail) * 100) : 0}% of fails)</span>
                                                                         </li>
                                                                     ))}
@@ -1047,7 +1047,7 @@ export function JourneyHistoryPanel({ environments }: { environments: { name: st
                                                         ) : null}
                                                         {detail.failedAttempts.length > 0 ? (
                                                             <div>
-                                                                <div className="font-semibold text-slate-700 mb-1">Failed attempts ({detail.failedAttempts.length.toLocaleString()})</div>
+                                                                <div className="font-semibold text-slate-700 mb-1">Failed attempts ({detail.failedAttempts.length.toLocaleString("en-US")})</div>
                                                                 <div className="overflow-x-auto rounded border border-slate-200 bg-white">
                                                                     <table className="w-full">
                                                                         <thead className="bg-slate-50 text-slate-500">
@@ -1077,7 +1077,7 @@ export function JourneyHistoryPanel({ environments }: { environments: { name: st
                                                                     </table>
                                                                 </div>
                                                                 {detail.failedAttempts.length > 50 ? (
-                                                                    <div className="mt-1 text-slate-500">Showing first 50 of {detail.failedAttempts.length.toLocaleString()} — use the Attempts table (filter: fail) for all.</div>
+                                                                    <div className="mt-1 text-slate-500">Showing first 50 of {detail.failedAttempts.length.toLocaleString("en-US")} — use the Attempts table (filter: fail) for all.</div>
                                                                 ) : null}
                                                             </div>
                                                         ) : (

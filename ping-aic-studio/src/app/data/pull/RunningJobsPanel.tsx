@@ -30,13 +30,13 @@ type Row =
 function managedProgress(job: DataPullJob): string {
   const records = job.progress.reduce((a, p) => a + p.fetched, 0);
   const done = job.progress.filter((p) => p.status === "done").length;
-  return `${records.toLocaleString()} records · ${done}/${job.progress.length} types`;
+  return `${records.toLocaleString("en-US")} records · ${done}/${job.progress.length} types`;
 }
 
 function logProgress(job: LogPullJob): string {
   const events = job.progress.reduce((a, p) => a + p.stored, 0);
   const done = job.progress.filter((p) => p.status === "done").length;
-  return `${events.toLocaleString()} events · ${done}/${job.progress.length} sources`;
+  return `${events.toLocaleString("en-US")} events · ${done}/${job.progress.length} sources`;
 }
 
 /**
@@ -109,7 +109,7 @@ export function RunningJobsPanel() {
                     {kind === "managed" ? managedProgress(job) : logProgress(job)}
                   </span>
                   <span className="ml-auto shrink-0 text-[11px] text-slate-400">
-                    started {new Date(job.startedAt).toLocaleTimeString()}
+                    started {new Date(job.startedAt).toLocaleTimeString("en-US")}
                   </span>
                 </button>
               </li>

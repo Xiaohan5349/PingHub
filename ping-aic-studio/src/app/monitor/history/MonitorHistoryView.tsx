@@ -439,7 +439,7 @@ function UptimeStrip({ points, hours }: { points: ServerBucket[]; hours: number 
                     key={i}
                     className="flex-1 rounded-[1px]"
                     style={{ backgroundColor: statusToColor(s) }}
-                    title={`${new Date(from + i * segMs).toLocaleString()} — ${s}`}
+                    title={`${new Date(from + i * segMs).toLocaleString("en-US")} — ${s}`}
                 />
             ))}
         </div>
@@ -472,11 +472,11 @@ function TlsStrip({ points, hours }: { points: TlsBucket[]; hours: number }) {
                     style={{ backgroundColor: b ? statusToColor(b.status) : statusToColor("empty") }}
                     title={
                         b
-                            ? `${new Date(b.ts).toLocaleString()} — ${b.status}${b.daysRemaining != null
+                            ? `${new Date(b.ts).toLocaleString("en-US")} — ${b.status}${b.daysRemaining != null
                                 ? `, ${Math.floor(b.daysRemaining)} d remaining`
                                 : ""
                             }`
-                            : `${new Date(from + i * segMs).toLocaleString()} — no data`
+                            : `${new Date(from + i * segMs).toLocaleString("en-US")} — no data`
                     }
                 />
             ))}
@@ -573,7 +573,7 @@ function DetailPanel(props: {
                                 }}
                             />
                             <Tooltip
-                                labelFormatter={(v) => new Date(Number(v)).toLocaleString()}
+                                labelFormatter={(v) => new Date(Number(v)).toLocaleString("en-US")}
                                 contentStyle={{ fontSize: 12 }}
                             />
                             {kind === "server" ? (

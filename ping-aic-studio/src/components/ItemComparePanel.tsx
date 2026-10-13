@@ -32,7 +32,7 @@ type SlotRef =
 
 function slotLabel(slot: SlotRef): string {
     if (slot.kind === "working") return "Working tree";
-    return `${slot.shortSha} · ${new Date(slot.isoDate).toLocaleString()}`;
+    return `${slot.shortSha} · ${new Date(slot.isoDate).toLocaleString("en-US")}`;
 }
 
 function slotBadge(slot: SlotRef): string {
@@ -345,7 +345,7 @@ export function ItemComparePanel({ environment, scope, item, itemLabel }: ItemCo
                                                         <span className="font-mono text-slate-600">{entry.shortSha}</span>
                                                         <span className="text-slate-400">·</span>
                                                         <span className="text-slate-600 text-[10px]">
-                                                            {new Date(entry.isoDate).toLocaleString()}
+                                                            {new Date(entry.isoDate).toLocaleString("en-US")}
                                                         </span>
                                                     </div>
                                                     <div

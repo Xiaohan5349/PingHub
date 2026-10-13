@@ -56,7 +56,7 @@ function timeAgo(ms: number): string {
   const delta = Math.max(0, Date.now() - ms);
   if (delta < 60_000) return `${Math.floor(delta / 1000)}s ago`;
   if (delta < 3_600_000) return `${Math.floor(delta / 60_000)}m ago`;
-  return new Date(ms).toLocaleTimeString();
+  return new Date(ms).toLocaleTimeString("en-US");
 }
 
 function formatDuration(ms: number): string {
@@ -131,7 +131,7 @@ export function JobCard({
         {etaMs !== null && (
           <span
             className="text-xs text-sky-700"
-            title={ratePerSec ? `${Math.round(ratePerSec).toLocaleString()} records/sec` : undefined}
+            title={ratePerSec ? `${Math.round(ratePerSec).toLocaleString("en-US")} records/sec` : undefined}
           >
             · ~{formatDuration(etaMs)} remaining
           </span>
@@ -165,7 +165,7 @@ export function JobCard({
       {showOverall && (
         <div className="space-y-1">
           <div className="flex items-baseline gap-2 text-xs">
-            <span className="tabular-nums font-semibold text-slate-700">{overall.count.toLocaleString()}</span>
+            <span className="tabular-nums font-semibold text-slate-700">{overall.count.toLocaleString("en-US")}</span>
             <span className="text-slate-500">{countNoun}</span>
             <span className="text-slate-300">·</span>
             <span className="text-slate-500 tabular-nums">{overall.doneUnits}/{overall.totalUnits} {unitNoun}</span>
@@ -226,8 +226,8 @@ export function JobCard({
                   className="text-slate-500 tabular-nums w-28 text-right"
                   title={p.expectedFromProbe ? "Denominator from the Probe counts value" : undefined}
                 >
-                  {p.fetched.toLocaleString()}
-                  {p.expected !== null ? ` / ${p.expected.toLocaleString()}${p.expectedFromProbe ? "*" : ""}` : ""}
+                  {p.fetched.toLocaleString("en-US")}
+                  {p.expected !== null ? ` / ${p.expected.toLocaleString("en-US")}${p.expectedFromProbe ? "*" : ""}` : ""}
                 </span>
                 <span className={cn("text-[10px] w-16", p.status === "failed" ? "text-rose-600 font-semibold" : "text-slate-400")}>
                   {p.status}

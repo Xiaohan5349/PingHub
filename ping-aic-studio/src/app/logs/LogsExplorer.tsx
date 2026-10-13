@@ -443,8 +443,8 @@ function formatTs(ts: string, tz: TzMode = "local"): { date: string; time: strin
       return { date: "", time: String(d.getTime()) };
     }
     const tzOpt: Intl.DateTimeFormatOptions["timeZone"] = tz === "utc" ? "UTC" : undefined;
-    const date = d.toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: tzOpt });
-    const time = d.toLocaleTimeString(undefined, { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: tzOpt })
+    const date = d.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: tzOpt });
+    const time = d.toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: tzOpt })
       + "." + String(d.getMilliseconds()).padStart(3, "0")
       + (tz === "utc" ? "Z" : "");
     return { date, time };
@@ -2554,7 +2554,7 @@ export function LogsExplorer({
                         done: true,
                         paused: false,
                         source: "local archive",
-                        window: capped ? `first ${entries.length.toLocaleString()} of ${total.toLocaleString()} — refine to see more` : undefined,
+                        window: capped ? `first ${entries.length.toLocaleString("en-US")} of ${total.toLocaleString("en-US")} — refine to see more` : undefined,
                     });
                     onConfigChange({ searching: false });
                 })
@@ -3101,7 +3101,7 @@ export function LogsExplorer({
         {tailing && (
           <div className="flex items-center gap-1.5 text-xs text-slate-500">
             <span className="inline-block w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-            {loading ? "Fetching…" : lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : "Starting…"}
+            {loading ? "Fetching…" : lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString("en-US")}` : "Starting…"}
           </div>
         )}
         {(fetched || tailTotalReceived > 0) && (() => {
@@ -3112,10 +3112,10 @@ export function LogsExplorer({
           return (
             <span className="text-xs text-slate-400">
               {filtered.length}
-              {filtered.length !== totalReceived && `/${totalReceived.toLocaleString()}`}{" "}
+              {filtered.length !== totalReceived && `/${totalReceived.toLocaleString("en-US")}`}{" "}
               {totalReceived === 1 ? "entry" : "entries"}
               {dedupe && dedupeHidden > 0 && (
-                <span className="text-amber-600"> · {dedupeHidden.toLocaleString()} deduped</span>
+                <span className="text-amber-600"> · {dedupeHidden.toLocaleString("en-US")} deduped</span>
               )}
               {loading && !tailing && " · loading…"}
             </span>
@@ -3730,9 +3730,9 @@ export function LogsExplorer({
                   : 0;
                 return (
                   <>
-                    {filtered.length} / {totalReceived.toLocaleString()}
+                    {filtered.length} / {totalReceived.toLocaleString("en-US")}
                     {dedupe && dedupeHidden > 0 && (
-                      <span className="text-amber-600"> (−{dedupeHidden.toLocaleString()})</span>
+                      <span className="text-amber-600"> (−{dedupeHidden.toLocaleString("en-US")})</span>
                     )}
                   </>
                 );
@@ -4061,7 +4061,7 @@ export function LogsExplorer({
             )}
             <span className="text-xs text-slate-600">
               {fetchProgress.loaded > 0
-                ? `Search complete — ${fetchProgress.loaded.toLocaleString()} entries loaded`
+                ? `Search complete — ${fetchProgress.loaded.toLocaleString("en-US")} entries loaded`
                 : "Search complete — no entries found for this time range"}
             </span>
           </div>
@@ -4130,11 +4130,11 @@ export function LogsExplorer({
                         : pausePending && !fetchProgress.paused
                           ? `Pausing — waiting for in-flight request…`
                           : fetchProgress.paused
-                            ? `Paused — ${fetchProgress.loaded.toLocaleString()} entries loaded`
+                            ? `Paused — ${fetchProgress.loaded.toLocaleString("en-US")} entries loaded`
                             : [
                               fetchProgress.source && `[${fetchProgress.source}]`,
                               fetchProgress.window && fetchProgress.window,
-                              fetchProgress.loaded > 0 && `${fetchProgress.loaded.toLocaleString()} entries`,
+                              fetchProgress.loaded > 0 && `${fetchProgress.loaded.toLocaleString("en-US")} entries`,
                               pct !== null && `${pct}%`,
                             ].filter(Boolean).join(' · ')}
                   </span>
@@ -4244,13 +4244,13 @@ export function LogsExplorer({
                 {loading
                   ? `Fetching…`
                   : lastUpdated
-                    ? `Updated ${lastUpdated.toLocaleTimeString()}`
+                    ? `Updated ${lastUpdated.toLocaleTimeString("en-US")}`
                     : `Starting…`}
               </span>
               {tailTotalReceived > 0 && (
                 <span className="text-xs text-slate-400">
-                  · {tailTotalReceived.toLocaleString()} total
-                  {tailDropped > 0 && ` · ${entries.length.toLocaleString()} in buffer`}
+                  · {tailTotalReceived.toLocaleString("en-US")} total
+                  {tailDropped > 0 && ` · ${entries.length.toLocaleString("en-US")} in buffer`}
                 </span>
               )}
             </div>
@@ -4458,7 +4458,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
     const id = _nextTabId++;
     const tabEnv = tabs.find((t) => t.id === activeId)?.config.env ?? "";
     const tabSources = tabs.find((t) => t.id === activeId)?.config.selectedSources ?? ["am-everything", "idm-everything"];
-    const shortTime = new Date(anchorTs).toLocaleTimeString(undefined, { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    const shortTime = new Date(anchorTs).toLocaleTimeString("en-US", { hour12: false, hour: "2-digit", minute: "2-digit", second: "2-digit" });
     const label = `±5s @${shortTime} (${tabEnv})`;
     const begin = toDatetimeLocal(beginTs, tzMode);
     const end = toDatetimeLocal(endTs, tzMode);

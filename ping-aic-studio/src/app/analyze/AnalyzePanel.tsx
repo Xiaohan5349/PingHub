@@ -237,7 +237,7 @@ function EsvOrphanReportView({ report, env }: { report: EsvOrphanReport; env: st
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Stat value={report.orphans.length} label="Orphan ESVs" sub="referenced, not defined" color="text-rose-600" />
         <Stat value={report.unused.length} label="Unused ESVs" sub="defined, not referenced" color="text-amber-600" />
-        <Stat value={report.totalReferences} label="Total references" sub={`across ${report.scannedFiles.toLocaleString()} files`} color="text-slate-800" />
+        <Stat value={report.totalReferences} label="Total references" sub={`across ${report.scannedFiles.toLocaleString("en-US")} files`} color="text-slate-800" />
         <Stat value={report.totalDefinedNames} label="Defined ESVs" color="text-sky-600" />
       </div>
 
