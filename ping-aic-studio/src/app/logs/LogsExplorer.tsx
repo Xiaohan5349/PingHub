@@ -2131,7 +2131,10 @@ export function LogsExplorer({
   const terminalView = viewMode === "terminal";
   const wrapLines = config.wrapLines ?? false;
   const dedupe = config.dedupe ?? false;
-  const autoScroll = config.autoScroll ?? true;
+  // The Auto-scroll toggle is a Tail control. Search and Transaction results
+  // always follow the newest page as it streams in; scrolling away or clicking
+  // an entry still pauses that, and Jump to bottom resumes it.
+  const autoScroll = mode !== "tail" || (config.autoScroll ?? true);
   const setViewMode = useCallback((v: "terminal" | "table") => {
     // Also write terminalView for backward compat with any pre-existing persisted state.
     onConfigChange({ viewMode: v, terminalView: v === "terminal" });
@@ -3609,8 +3612,8 @@ export function LogsExplorer({
                 Wrap
               </button>
             )}
-            {/* Auto-scroll toggle — visible during tailing in terminal view */}
-            {viewMode === "terminal" && (
+            {/* Auto-scroll toggle — Tail mode, terminal view */}
+            {mode === "tail" && viewMode === "terminal" && (
               <button
                 type="button"
                 onClick={() => setAutoScroll((v) => !v)}
