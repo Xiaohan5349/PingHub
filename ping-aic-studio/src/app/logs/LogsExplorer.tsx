@@ -11,6 +11,7 @@ import { parseQuery } from "@/lib/log-query";
 import { parsePastedTimestamp } from "@/lib/log-time-paste";
 import { appendClause, buildClause, flattenPayload, operatorsFor, type FilterOp, type PayloadField } from "@/lib/log-filter-builder";
 import { useBusyState } from "@/hooks/useBusyState";
+import { DownloadMenu } from "./DownloadMenu";
 import { DEFAULT_LOG_SOURCES } from "@/lib/logs/log-sources";
 
 // ── Timezone ──────────────────────────────────────────────────────────────────
@@ -511,50 +512,6 @@ function ResizableHeader({
       />
     </th>
   );
-}
-
-/** Recursively unescape JSON-encoded string values within an object.
- *  Handles pure JSON strings and strings with a text prefix followed by
- *  embedded JSON (e.g. "SEVERE: [uuid] Content: {\"key\":\"val\"}").
- *  Embedded JSON is split into { _prefix, _json } so it renders cleanly. */
-function deepUnescapeJson(val: unknown): unknown {
-  if (typeof val === "string") {
-    const trimmed = val.trim();
-    // Pure JSON string
-    if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
-      try { return deepUnescapeJson(JSON.parse(trimmed)); } catch { /* not valid JSON — keep as string */ }
-    }
-    // Text prefix with embedded JSON: find the first { or [ and try to parse from there
-    const jsonStart = findJsonStart(trimmed);
-    if (jsonStart > 0) {
-      const candidate = trimmed.slice(jsonStart);
-      try {
-        const parsed = deepUnescapeJson(JSON.parse(candidate));
-        return { _prefix: trimmed.slice(0, jsonStart).trimEnd(), _json: parsed };
-      } catch { /* not valid JSON after prefix */ }
-    }
-    return val;
-  }
-  if (Array.isArray(val)) return val.map(deepUnescapeJson);
-  if (val !== null && typeof val === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
-      out[k] = deepUnescapeJson(v);
-    }
-    return out;
-  }
-  return val;
-}
-
-/** Find the index of the first opening delimiter that matches the string's
- *  closing delimiter. If the string ends with }, look for the first {.
- *  If it ends with ], look for the first [. This avoids false positives
- *  like "[uuid]" appearing before the actual JSON object. */
-function findJsonStart(s: string): number {
-  const t = s.trimEnd();
-  if (t.endsWith("}")) { const i = s.indexOf("{"); return i > 0 ? i : -1; }
-  if (t.endsWith("]")) { const i = s.indexOf("["); return i > 0 ? i : -1; }
-  return -1;
 }
 
 /**
@@ -3764,31 +3721,17 @@ export function LogsExplorer({
             )}
             {fetched && (
               <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Export is ALWAYS JSON regardless of the active view (Terminal/Table).
-                    // We export the full filtered entry objects (what the user currently sees in
-                    // the buffer after Level/Filter/Search). `deepUnescapeJson` expands nested
-                    // stringified-JSON payloads so the file is directly machine-parseable
-                    // without a second JSON.parse pass.
-                    const filtersActive = !!search || levelFilter !== "ALL";
-                    const data = JSON.stringify(filtered.map((e) => deepUnescapeJson(e)), null, 2);
-                    const blob = new Blob([data], { type: "application/json" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
+                <DownloadMenu
+                  entries={filtered}
+                  pageSize={pageSize}
+                  currentPage={currentPage}
+                  toText={(e) => formatTerminalLine(e, tailSource)}
+                  baseName={() => {
                     const ts = new Date().toISOString().slice(0, 19).replace(/:/g, "");
-                    const suffix = filtersActive ? "-filtered" : "";
-                    a.download = `logs-${selectedSources.join("-")}-${ts}${suffix}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url);
+                    const filtersActive = !!search || levelFilter !== "ALL";
+                    return `${mode === "tail" ? "tail" : "logs"}-${selectedSources.join("-")}-${ts}${filtersActive ? "-filtered" : ""}`;
                   }}
-                  className="text-xs text-slate-400 hover:text-slate-600 transition-colors shrink-0"
-                  title="Download visible entries as JSON (full payload, regardless of current view)"
-                >
-                  Export
-                </button>
+                />
                 <button
                   type="button"
                   onClick={() => {
@@ -4255,25 +4198,6 @@ export function LogsExplorer({
               )}
             </div>
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  try {
-                    const lines = entries.map((e) => formatTerminalLine(e, tailSource)).join("\n");
-                    const blob = new Blob([lines], { type: "text/plain" });
-                    const url = URL.createObjectURL(blob);
-                    const a = Object.assign(document.createElement("a"), {
-                      href: url,
-                      download: `tail-${new Date().toISOString().slice(0, 19).replace(/:/g, "")}.log`,
-                    });
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  } catch { /* ignore */ }
-                }}
-                className="px-2.5 py-1 text-xs font-medium bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition-colors"
-              >
-                Export session
-              </button>
               <button
                 type="button"
                 onClick={() => onConfigChange({ tailing: false })}
