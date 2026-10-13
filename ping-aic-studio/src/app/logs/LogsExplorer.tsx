@@ -2579,7 +2579,7 @@ const EntryRow = memo(function EntryRow({
             <div className="flex items-center gap-2 px-4 pt-2">
               {onPickField && !rawView && (
                 <span className="text-[10px] text-slate-400">
-                  Click a value to build a server filter — select part of a text value to use just that part
+                  Click a value to build a queryFilter clause — select part of a text value to use just that part
                 </span>
               )}
               <div className="seg-sm ml-auto">
@@ -2641,6 +2641,10 @@ const EntryRow = memo(function EntryRow({
 
 // ── Server filter builder ───────────────────────────────────────────────────
 
+// Every operator is listed in the builder; ones that don't fit the picked
+// value's type are shown disabled so it's clear they exist.
+const ALL_FILTER_OPS: FilterOp[] = ["eq", "co", "sw", "gt", "ge", "lt", "le", "pr"];
+
 function pickedFieldKey(f: PayloadField): string {
   return `${f.path}\u0000${f.value}`;
 }
@@ -2677,28 +2681,37 @@ function FilterBuilderBar({
   );
   const clause = buildClause({ path: field.path, op, value, type: field.type, negate });
 
+  const allowed = operatorsFor(field.type);
+
   return (
     <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-100 text-xs">
-      <label className="font-medium text-slate-500 shrink-0">Build</label>
-      <span className="font-mono text-slate-600 truncate max-w-[18rem] shrink-0" title={field.path}>{field.path}</span>
       <button
         type="button"
         onClick={() => setNegate((n) => !n)}
-        title="Negate: wrap the clause in !( )"
-        className={cn("toggle-chip font-mono", negate && "toggle-chip-on")}
+        title="NOT — wrap the clause in !( )"
+        className={cn("toggle-chip font-mono shrink-0", negate && "toggle-chip-on")}
       >
         !
       </button>
-      <select
-        value={op}
-        onChange={(e) => setOp(e.target.value as FilterOp)}
-        title={field.type === "string" ? "gt / ge / lt / le only work on numeric fields" : undefined}
-        className="rounded border border-slate-300 px-1.5 py-0.5 text-[11px] font-mono text-slate-700 focus:outline-none focus:ring-1 focus:ring-sky-500"
-      >
-        {operatorsFor(field.type).map((o) => (
-          <option key={o} value={o}>{o}</option>
+      <span className="font-mono text-slate-600 truncate max-w-[18rem] shrink-0" title={field.path}>{field.path}</span>
+      <div className="seg-sm">
+        {ALL_FILTER_OPS.map((o) => (
+          <button
+            key={o}
+            type="button"
+            onClick={() => setOp(o)}
+            disabled={!allowed.includes(o)}
+            title={allowed.includes(o) ? undefined
+              : o === "co" || o === "sw" ? "Text values only" : "Numeric values only"}
+            className={cn(
+              "seg-sm-item font-mono disabled:opacity-25 disabled:line-through",
+              op === o && "seg-sm-item-active",
+            )}
+          >
+            {o}
+          </button>
         ))}
-      </select>
+      </div>
       {op !== "pr" && (
         <input
           type="text"
@@ -2710,8 +2723,11 @@ function FilterBuilderBar({
           )}
         />
       )}
+      <span className="flex-1 min-w-0 truncate text-[11px] text-slate-400" title={clause}>
+        → <code className="font-mono text-slate-500">{clause}</code>
+      </span>
       {hasFilter && (
-        <div className="seg-sm" title="How to join with the existing server filter">
+        <div className="seg-sm shrink-0" title="How to join this clause with the existing queryFilter">
           {(["and", "or"] as const).map((j) => (
             <button
               key={j}
@@ -2724,16 +2740,13 @@ function FilterBuilderBar({
           ))}
         </div>
       )}
-      <code className="flex-1 min-w-0 truncate font-mono text-[11px] text-slate-500" title={clause}>
-        {clause}
-      </code>
       <button
         type="button"
         onClick={() => onAdd(clause, join)}
         disabled={invalid}
         className="px-3 py-1 text-xs font-medium bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50 transition-colors shrink-0"
       >
-        Add to server filter
+        Add to queryFilter
       </button>
       <button
         type="button"
@@ -3950,11 +3963,12 @@ export function LogsExplorer({
   const localSearch = mode === "search" && config.dataSource === "local";
   // Picking fields only makes sense where the Server filter is a CREST filter.
   const canBuildFilter = (mode === "tail" || mode === "search") && !localSearch;
-  const renderServerFilter = (onEnter: () => void, disabled: boolean) => (
+  // onClear runs after the box is emptied (Tail uses it to restart right away).
+  const renderServerFilter = (onEnter: () => void, disabled: boolean, onClear?: () => void) => (
     <>
       <span className="text-slate-300 select-none">|</span>
       <label className="text-xs font-medium text-slate-500 whitespace-nowrap">
-        {localSearch ? "Text" : "Server filter"}
+        {localSearch ? "Text" : "queryFilter"}
       </label>
       <input
         type="text"
@@ -3976,6 +3990,21 @@ export function LogsExplorer({
           : "Sent to AIC as-is as _queryFilter (CREST syntax: eq co sw lt le gt ge pr, and / or / !( )). Pick fields from an expanded table row to build it. Leave blank for everything."}
         className="flex-1 min-w-0 text-xs rounded border border-slate-300 px-2.5 py-1 font-mono focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 disabled:opacity-50"
       />
+      {serverFilterRaw !== "" && (
+        <button
+          type="button"
+          onClick={() => {
+            setServerFilterRaw("");
+            serverFilterRawRef.current = "";
+            onClear?.();
+          }}
+          disabled={disabled}
+          title={onClear ? "Clear the filter" : "Clear the filter (press Enter or Search to apply)"}
+          className="px-2 py-1 text-xs text-slate-500 rounded hover:bg-slate-100 hover:text-slate-700 disabled:opacity-50 shrink-0"
+        >
+          Clear
+        </button>
+      )}
     </>
   );
 
@@ -4089,6 +4118,7 @@ export function LogsExplorer({
                     else if (selectedSources.length > 0 && !sourcesError) onConfigChange({ tailing: true });
                   },
                   loading || searching,
+                  () => { if (tailing) setTailFilterSeq((n) => n + 1); },
                 )}
               </>
             )}
@@ -4285,13 +4315,19 @@ export function LogsExplorer({
 
           {/* Row 2: Query — Filter and Highlight side-by-side; share one Aa/[W] toggle pair and the match navigator */}
           <div className="flex items-center gap-2 px-4 py-2 border-t border-slate-100">
-            <label className="text-xs font-medium text-slate-500 shrink-0">Filter</label>
+            <label
+              className="text-xs font-medium text-slate-500 shrink-0"
+              title="Narrows the logs already loaded on this page, in the browser. Does not query AIC — use queryFilter for that."
+            >
+              Search loaded
+            </label>
             <input
               type="text"
               value={rawSearch}
               onChange={(e) => handleFilterChange(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") applySearch(rawSearch); }}
-              placeholder="Filter entries… (space=AND, ||, ( ), &quot;phrase&quot;; 3+ chars or Enter)"
+              placeholder='e.g.  error timeout (both)  ·  error || warn (either)  ·  "exact phrase"'
+              title="Shows only loaded entries that match. Applies after 3 characters or on Enter."
               className={cn(
                 "flex-1 min-w-0 text-xs rounded border px-2.5 py-1 font-mono focus:outline-none focus:ring-2",
                 filterQuery.error
@@ -4351,7 +4387,7 @@ export function LogsExplorer({
                   if (e.shiftKey) goPrevMatch(); else goNextMatch();
                 }
               }}
-              placeholder="Highlight (space=AND, ||, ( ), &quot;phrase&quot;)…"
+              placeholder='e.g.  error timeout  ·  error || warn  ·  "exact phrase"'
               className={cn(
                 "flex-1 min-w-0 text-xs rounded border px-2.5 py-1 font-mono focus:outline-none focus:ring-2",
                 highlightQuery.error
