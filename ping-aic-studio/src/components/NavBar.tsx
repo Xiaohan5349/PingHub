@@ -182,8 +182,10 @@ export function NavBar() {
               const isCurrent = group === currentGroup;
               const groupBtn = cn(
                 "flex items-center gap-1 h-[34px] px-2.5 sm:px-3 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
+                // The current group is tinted; its pages below use underline
+                // tabs, so the two levels don't read as the same control.
                 isCurrent
-                  ? "bg-tile text-ink ring-1 ring-inset ring-line-2"
+                  ? "bg-accent-weak text-accent"
                   : "text-ink-2 hover:text-ink hover:bg-hover",
               );
               if (group.items.length === 1) {
@@ -258,7 +260,7 @@ export function NavBar() {
         </div>
 
         {currentGroup && currentGroup.items.length > 1 && (
-          <nav className="flex items-center gap-1 pb-2.5 overflow-x-auto" aria-label={currentGroup.label}>
+          <nav className="flex items-end gap-1 -mb-px overflow-x-auto scrollbar-hidden" aria-label={currentGroup.label}>
             {currentGroup.items.map((item) => {
               const Icon = item.icon;
               const on = isActiveHref(pathname, item.href);
@@ -268,10 +270,10 @@ export function NavBar() {
                   href={item.href}
                   onClick={guardedClick(item.href)}
                   className={cn(
-                    "flex items-center gap-1.5 h-8 px-3 rounded-lg text-[13.5px] whitespace-nowrap transition-colors",
+                    "flex items-center gap-1.5 h-10 px-3 border-b-2 text-[13.5px] whitespace-nowrap transition-colors",
                     on
-                      ? "bg-tile text-ink font-semibold ring-1 ring-inset ring-line-2"
-                      : "text-ink-2 font-medium hover:text-ink hover:bg-hover",
+                      ? "border-accent text-ink font-semibold"
+                      : "border-transparent text-ink-2 font-medium hover:text-ink hover:border-line-3",
                   )}
                 >
                   <Icon className={cn("w-[15px] h-[15px]", on && "text-accent")} />
