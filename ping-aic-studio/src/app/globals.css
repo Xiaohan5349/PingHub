@@ -93,6 +93,22 @@ select optgroup {
   color: var(--ink);
 }
 
+/* Disabled filled buttons read as neutral rather than a faded accent, which
+   turned into a muddy slab in the dark theme. Components still add their own
+   disabled:opacity-* / disabled:bg-* classes; this rule overrides them all. */
+button:disabled:is(
+  .btn-primary, .btn-danger-solid,
+  .bg-sky-600, .bg-blue-600, .bg-indigo-600, .bg-violet-600, .bg-purple-600,
+  .bg-emerald-600, .bg-green-600, .bg-teal-600, .bg-cyan-600,
+  .bg-amber-600, .bg-orange-600, .bg-red-600, .bg-rose-600
+) {
+  background-color: var(--tile-2);
+  color: var(--ink-3);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  opacity: 1;
+  cursor: not-allowed;
+}
+
 /* ── Console animations ──────────────────────────────────────────────────── */
 
 @keyframes log-fade-in {
