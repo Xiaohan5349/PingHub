@@ -45,16 +45,14 @@ function EndpointSelector({
           <option key={env.name} value={env.name}>{env.label}</option>
         ))}
       </select>
-      <div className="flex gap-1.5">
+      <div className="seg flex w-full">
         {(["local", "remote"] as Mode[]).map((m) => (
           <label
             key={m}
             className={cn(
-              "flex-1 flex items-center justify-center py-1.5 rounded border text-xs font-medium transition-colors select-none",
+              "seg-item flex-1 justify-center select-none",
               disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer",
-              value.mode === m
-                ? "bg-sky-600 border-sky-600 text-white"
-                : "bg-white border-slate-300 text-slate-600 hover:border-sky-400"
+              value.mode === m && "seg-item-active",
             )}
           >
             <input

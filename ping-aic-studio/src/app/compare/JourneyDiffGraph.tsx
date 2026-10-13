@@ -2110,19 +2110,13 @@ export function JourneyDiffGraphModal({
         </div>
 
         {/* Display view toggle */}
-        <div className="flex rounded border border-slate-300 overflow-hidden text-[11px] shrink-0">
-          {(["graph", "outline", "table", "swimlane", "json"] as const).map((v, i) => (
+        <div className="seg-sm">
+          {(["graph", "outline", "table", "swimlane", "json"] as const).map((v) => (
             <button
               key={v}
               type="button"
               onClick={() => setDisplayView(v)}
-              className={cn(
-                "px-2.5 py-1 transition-colors capitalize",
-                i > 0 && "border-l border-slate-300",
-                displayView === v
-                  ? "bg-sky-600 text-white"
-                  : "text-slate-500 hover:text-slate-700 hover:bg-slate-100",
-              )}
+              className={cn("seg-sm-item capitalize", displayView === v && "seg-sm-item-active")}
             >
               {v === "swimlane" ? "Swim" : v.charAt(0).toUpperCase() + v.slice(1)}
             </button>
@@ -2132,18 +2126,13 @@ export function JourneyDiffGraphModal({
         {/* Graph-only controls */}
         {displayView === "graph" && (<>
           {/* View mode toggle */}
-          <div className="flex rounded border border-slate-300 overflow-hidden text-[11px] shrink-0">
+          <div className="seg-sm">
             {(["merged", "side-by-side"] as const).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => setViewMode(m)}
-                className={cn(
-                  "px-3 py-1 transition-colors capitalize",
-                  viewMode === m
-                    ? "bg-slate-600 text-white"
-                    : "text-slate-500 hover:text-slate-700 hover:bg-slate-100",
-                )}
+                className={cn("seg-sm-item capitalize", viewMode === m && "seg-sm-item-active")}
               >
                 {m === "side-by-side" ? "Side by side" : "Merged"}
               </button>
@@ -2155,12 +2144,7 @@ export function JourneyDiffGraphModal({
             type="button"
             onClick={() => setHideUnchanged((v) => !v)}
             title="Hide unchanged nodes"
-            className={cn(
-              "px-2.5 py-1 text-[11px] rounded border transition-colors shrink-0",
-              hideUnchanged
-                ? "bg-sky-600 text-white border-sky-600"
-                : "text-slate-500 border-slate-300 hover:text-slate-700 hover:border-slate-400",
-            )}
+            className={cn("toggle-chip", hideUnchanged && "toggle-chip-on")}
           >
             Hide unchanged
           </button>
@@ -2170,12 +2154,7 @@ export function JourneyDiffGraphModal({
             type="button"
             onClick={() => setIsCompact((v) => !v)}
             title={isCompact ? "Switch to normal layout" : "Switch to compact layout"}
-            className={cn(
-              "px-2.5 py-1 text-[11px] rounded border transition-colors shrink-0 flex items-center gap-1",
-              isCompact
-                ? "bg-sky-600 text-white border-sky-600"
-                : "text-slate-500 border-slate-300 hover:text-slate-700 hover:border-slate-400",
-            )}
+            className={cn("toggle-chip gap-1", isCompact && "toggle-chip-on")}
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round"
@@ -2190,12 +2169,7 @@ export function JourneyDiffGraphModal({
               type="button"
               onClick={() => setSyncViewports((v) => !v)}
               title="Sync viewports between panels"
-              className={cn(
-                "px-2.5 py-1 text-[11px] rounded border transition-colors shrink-0",
-                syncViewports
-                  ? "bg-sky-600 text-white border-sky-600"
-                  : "text-slate-500 border-slate-300 hover:text-slate-700 hover:border-slate-400",
-              )}
+              className={cn("toggle-chip", syncViewports && "toggle-chip-on")}
             >
               Sync viewports
             </button>

@@ -19,23 +19,17 @@ export function EsvDisplayToggle({ mode, onChange, className }: Props) {
   return (
     <div
       className={cn(
-        "flex rounded border border-slate-300 overflow-hidden text-[11px] shrink-0",
+        "seg-sm",
         className,
       )}
       title="Toggle how ESV values are displayed"
     >
-      {(["base64", "decoded"] as const).map((m, i) => (
+      {(["base64", "decoded"] as const).map((m) => (
         <button
           key={m}
           type="button"
           onClick={() => onChange(m)}
-          className={cn(
-            "px-2.5 py-1 transition-colors",
-            i > 0 && "border-l border-slate-300",
-            mode === m
-              ? "bg-sky-600 text-white"
-              : "text-slate-500 hover:text-slate-700 hover:bg-slate-100",
-          )}
+          className={cn("seg-sm-item", mode === m && "seg-sm-item-active")}
         >
           {m === "base64" ? "Base64" : "Decoded"}
         </button>

@@ -1140,14 +1140,14 @@ export function JourneyHistoryPanel({ environments }: { environments: { name: st
                             <h3 className="text-sm font-semibold text-slate-700">Attempts</h3>
                             <div className="flex items-center gap-2 text-xs">
                                 <span className="text-slate-500">Filter:</span>
-                                {(["all", "fail", "incomplete"] as AttemptFilter[]).map((f) => (
-                                    <button key={f} type="button" onClick={() => setAttemptFilter(f)}
-                                        className={`px-2 py-0.5 rounded border ${attemptFilter === f
-                                            ? "bg-sky-600 text-white border-sky-600"
-                                            : "bg-white text-slate-700 border-slate-300 hover:bg-slate-50"}`}>
-                                        {f}
-                                    </button>
-                                ))}
+                                <div className="seg-sm">
+                                    {(["all", "fail", "incomplete"] as AttemptFilter[]).map((f) => (
+                                        <button key={f} type="button" onClick={() => setAttemptFilter(f)}
+                                            className={`seg-sm-item ${attemptFilter === f ? "seg-sm-item-active" : ""}`}>
+                                            {f}
+                                        </button>
+                                    ))}
+                                </div>
                                 <span className="text-slate-500 ml-2">{filteredAttempts.length} rows</span>
                             </div>
                         </div>

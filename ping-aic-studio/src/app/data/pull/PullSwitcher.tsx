@@ -23,13 +23,13 @@ export function PullSwitcher({
 
     return (
         <div className="space-y-4">
-            <div className="inline-flex rounded-md border border-slate-300 overflow-hidden text-sm">
+            <div className="seg">
                 {(["managed", "logs"] as const).map((m) => (
                     <button
                         key={m}
                         type="button"
                         onClick={() => setMode(m)}
-                        className={`px-3 py-1.5 ${mode === m ? "bg-sky-600 text-white" : "bg-white text-slate-600 hover:bg-slate-50"}`}
+                        className={`seg-item ${mode === m ? "seg-item-active" : ""}`}
                     >
                         {m === "managed" ? "Managed objects" : "Logs"}
                     </button>

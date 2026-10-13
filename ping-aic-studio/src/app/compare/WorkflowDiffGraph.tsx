@@ -481,16 +481,13 @@ export function WorkflowDiffGraphModal({
             {stats.modified > 0 && <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">{stats.modified} modified</span>}
             {stats.removed  > 0 && <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-700">{stats.removed} removed</span>}
           </div>
-          <div className="flex rounded border border-slate-300 overflow-hidden text-[11px] shrink-0">
+          <div className="seg-sm">
             {(["graph", "outline"] as const).map((v) => (
               <button
                 key={v}
                 type="button"
                 onClick={() => setDisplayView(v)}
-                className={cn(
-                  "px-3 py-1 transition-colors capitalize",
-                  displayView === v ? "bg-slate-600 text-white" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100",
-                )}
+                className={cn("seg-sm-item capitalize", displayView === v && "seg-sm-item-active")}
               >
                 {v}
               </button>
@@ -498,16 +495,13 @@ export function WorkflowDiffGraphModal({
           </div>
           {displayView === "graph" && (
             <>
-              <div className="flex rounded border border-slate-300 overflow-hidden text-[11px] shrink-0">
+              <div className="seg-sm">
                 {(["merged", "side-by-side"] as const).map((m) => (
                   <button
                     key={m}
                     type="button"
                     onClick={() => setViewMode(m)}
-                    className={cn(
-                      "px-3 py-1 transition-colors capitalize",
-                      viewMode === m ? "bg-slate-600 text-white" : "text-slate-500 hover:text-slate-700 hover:bg-slate-100",
-                    )}
+                    className={cn("seg-sm-item capitalize", viewMode === m && "seg-sm-item-active")}
                   >
                     {m === "side-by-side" ? "Side by side" : "Merged"}
                   </button>
@@ -517,10 +511,7 @@ export function WorkflowDiffGraphModal({
                 type="button"
                 onClick={() => setHideUnchanged((v) => !v)}
                 title="Hide unchanged steps"
-                className={cn(
-                  "px-2.5 py-1 text-[11px] rounded border transition-colors shrink-0",
-                  hideUnchanged ? "bg-sky-600 text-white border-sky-600" : "text-slate-500 border-slate-300 hover:text-slate-700 hover:border-slate-400",
-                )}
+                className={cn("toggle-chip", hideUnchanged && "toggle-chip-on")}
               >
                 Hide unchanged
               </button>
@@ -528,10 +519,7 @@ export function WorkflowDiffGraphModal({
                 type="button"
                 onClick={() => setIsCompact((v) => !v)}
                 title={isCompact ? "Switch to normal layout" : "Switch to compact layout"}
-                className={cn(
-                  "px-2.5 py-1 text-[11px] rounded border transition-colors shrink-0",
-                  isCompact ? "bg-sky-600 text-white border-sky-600" : "text-slate-500 border-slate-300 hover:text-slate-700 hover:border-slate-400",
-                )}
+                className={cn("toggle-chip", isCompact && "toggle-chip-on")}
               >
                 Compact
               </button>
@@ -546,10 +534,7 @@ export function WorkflowDiffGraphModal({
                     });
                   }}
                   title="Sync viewports between panels"
-                  className={cn(
-                    "px-2.5 py-1 text-[11px] rounded border transition-colors shrink-0",
-                    syncViewports ? "bg-sky-600 text-white border-sky-600" : "text-slate-500 border-slate-300 hover:text-slate-700 hover:border-slate-400",
-                  )}
+                  className={cn("toggle-chip", syncViewports && "toggle-chip-on")}
                 >
                   Sync viewports
                 </button>
