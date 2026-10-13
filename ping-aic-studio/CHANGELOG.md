@@ -33,6 +33,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The data pull API route no longer re-exports a helper, which failed the route type check in webpack production builds.
 - Open dropdown lists (time range, page size, …) are readable in the dark theme; their options now use the theme's tile and text colours.
 - The Logs toolbar (mode, queryFilter, filter builder, Search loaded, view) stays pinned under the header when the page scrolls.
+- One selection style per control type across the app: one-of-N choices (Local/Remote, Basic/Advanced, Diff/Files, graph views, …) use the neutral segmented control, on/off toggles (Wrap, Format, Hide unchanged, Compact, …) use the toggle chip, and a selected list item gets the accent tint. Solid accent is left to primary actions.
+- Disabled primary buttons (Compare, Pull, Check all, …) show as neutral grey instead of a faded or unreadable accent.
+- Dates and numbers are formatted in English regardless of the browser language, matching the rest of the UI.
+- Dense toolbar toggles and scope chips use 12px text instead of 11px.
+- Logs: the settings row lines up (equal control heights, no duplicate environment badge), and the Search loaded / Highlight placeholders no longer get cut off.
 
 ## [0.4.0] - 2026-06-11
 
