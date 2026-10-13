@@ -9,6 +9,7 @@ import { useDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { logEntryMatchKey } from "@/lib/log-match-navigation";
 import { parseQuery } from "@/lib/log-query";
+import { parsePastedTimestamp } from "@/lib/log-time-paste";
 import { appendClause, buildClause, flattenPayload, operatorsFor, type FilterOp, type PayloadField } from "@/lib/log-filter-builder";
 import { useBusyState } from "@/hooks/useBusyState";
 import { DEFAULT_LOG_SOURCES } from "@/lib/logs/log-sources";
@@ -3181,6 +3182,13 @@ export function LogsExplorer({
                         step="1"
                         value={customBegin}
                         onChange={(e) => onConfigChange({ customBegin: e.target.value })}
+                        onPaste={(e) => {
+                          const d = parsePastedTimestamp(e.clipboardData.getData("text"), tz === "local" ? "local" : "utc", "floor");
+                          if (!d) return;
+                          e.preventDefault();
+                          onConfigChange({ customBegin: toDatetimeLocal(d.toISOString(), tz) });
+                        }}
+                        title="Pick a time, or paste a log timestamp such as 2026-10-13T02:08:30.383Z"
                         disabled={searching}
                         className={cn(
                           "rounded border px-1.5 py-0.5 text-[11px] font-mono focus:outline-none focus:ring-1",
@@ -3193,6 +3201,13 @@ export function LogsExplorer({
                         step="1"
                         value={customEnd}
                         onChange={(e) => onConfigChange({ customEnd: e.target.value })}
+                        onPaste={(e) => {
+                          const d = parsePastedTimestamp(e.clipboardData.getData("text"), tz === "local" ? "local" : "utc", "ceil");
+                          if (!d) return;
+                          e.preventDefault();
+                          onConfigChange({ customEnd: toDatetimeLocal(d.toISOString(), tz) });
+                        }}
+                        title="Pick a time, or paste a log timestamp such as 2026-10-13T02:08:30.383Z"
                         disabled={searching}
                         className={cn(
                           "rounded border px-1.5 py-0.5 text-[11px] font-mono focus:outline-none focus:ring-1",
