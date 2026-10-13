@@ -1690,8 +1690,9 @@ function pickedFieldKey(f: PayloadField): string {
 
 /**
  * Builds one `_queryFilter` clause from a field picked in an expanded table
- * row: optional `!`, an operator valid for the value's type, and an editable
- * value. Keyed by the parent on each pick so its state resets.
+ * row: optional `!`, an editable path, an operator valid for the value's
+ * type, and an editable value. The type stays the picked value's even if the
+ * path is edited. Keyed by the parent on each pick so its state resets.
  */
 function FilterBuilderBar({
   field,
@@ -1710,15 +1711,18 @@ function FilterBuilderBar({
 }) {
   const [op, setOp] = useState<FilterOp>(part ? "co" : "eq");
   const [negate, setNegate] = useState(false);
+  const [path, setPath] = useState(field.path);
   const [value, setValue] = useState(part ?? field.value);
   const [join, setJoin] = useState<"and" | "or">("and");
+  const p = path.trim();
   const v = value.trim();
-  const invalid = op !== "pr" && (
+  const pathInvalid = !p.startsWith("/");
+  const valueInvalid = op !== "pr" && (
     field.type === "number" ? v === "" || !Number.isFinite(Number(v))
       : field.type === "boolean" ? v !== "true" && v !== "false"
         : value === ""
   );
-  const clause = buildClause({ path: field.path, op, value, type: field.type, negate });
+  const clause = buildClause({ path: p, op, value, type: field.type, negate });
 
   const allowed = operatorsFor(field.type);
 
@@ -1732,7 +1736,16 @@ function FilterBuilderBar({
       >
         !
       </button>
-      <span className="font-mono text-slate-600 truncate max-w-[18rem] shrink-0" title={field.path}>{field.path}</span>
+      <input
+        type="text"
+        value={path}
+        onChange={(e) => setPath(e.target.value)}
+        title="Field path (JSON pointer), e.g. /payload/eventName"
+        className={cn(
+          "w-64 min-w-0 rounded border px-2 py-0.5 font-mono focus:outline-none focus:ring-1",
+          pathInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
+        )}
+      />
       <div className="seg-sm">
         {ALL_FILTER_OPS.map((o) => (
           <button
@@ -1758,7 +1771,7 @@ function FilterBuilderBar({
           onChange={(e) => setValue(e.target.value)}
           className={cn(
             "w-56 min-w-0 rounded border px-2 py-0.5 font-mono focus:outline-none focus:ring-1",
-            invalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
+            valueInvalid ? "border-rose-400 focus:ring-rose-400" : "border-slate-300 focus:ring-sky-500",
           )}
         />
       )}
@@ -1782,7 +1795,7 @@ function FilterBuilderBar({
       <button
         type="button"
         onClick={() => onAdd(clause, join)}
-        disabled={invalid}
+        disabled={pathInvalid || valueInvalid}
         className="px-3 py-1 text-xs font-medium bg-sky-600 text-white rounded hover:bg-sky-700 disabled:opacity-50 transition-colors shrink-0"
       >
         Add to queryFilter
