@@ -3135,7 +3135,7 @@ export function LogsExplorer({
             queryFilter and filter builder stay reachable next to the logs. */}
         <div className={cn(
           "flex flex-col border-b border-slate-100 shrink-0",
-          fullscreen ? "bg-slate-50/50" : "sticky top-[var(--app-header-h,58px)] z-30 bg-slate-50 rounded-t-lg",
+          fullscreen ? "bg-slate-50/50" : "sticky top-[calc(var(--app-header-h,58px)+var(--logs-controls-h,0px))] z-30 bg-slate-50 rounded-t-lg",
         )}>
           {/* Row 1: mode toggle + tail/search controls + keyword highlights */}
           <div className="flex items-center gap-2 px-4 py-2">
@@ -4430,6 +4430,17 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
     return () => { cancelled = true; };
   }, [activeEnv, tenantSources]);
 
+  // Settings + tab bar stick under the header; the active tab's toolbar sticks
+  // right below them via --logs-controls-h.
+  const [controlsEl, setControlsEl] = useState<HTMLDivElement | null>(null);
+  const [controlsH, setControlsH] = useState(0);
+  useEffect(() => {
+    if (!controlsEl) return;
+    const ro = new ResizeObserver(() => setControlsH(controlsEl.offsetHeight));
+    ro.observe(controlsEl);
+    return () => ro.disconnect();
+  }, [controlsEl]);
+
   const updateActiveConfig = useCallback((updates: Partial<TabConfig>) => {
     setTabs((prev) =>
       prev.map((t) =>
@@ -4511,7 +4522,8 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
   return (
     <TzContext.Provider value={tzMode}>
       <TailBufferContext.Provider value={tailBufferMax}>
-        <div className="space-y-0">
+        <div className="space-y-0" style={{ "--logs-controls-h": `${controlsH}px` } as React.CSSProperties}>
+          <div ref={setControlsEl} className="sticky top-[var(--app-header-h,58px)] z-40 bg-canvas">
           {/* ── Controls (above tabs) ── */}
           {cfg && (
             <div className="card-padded space-y-4 rounded-b-none border-b-0">
@@ -4635,6 +4647,7 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
             >
               +
             </button>
+          </div>
           </div>
 
           {/* ── Tab panels ── */}
