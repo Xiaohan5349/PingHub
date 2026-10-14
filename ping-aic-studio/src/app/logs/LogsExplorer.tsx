@@ -11,6 +11,9 @@ import { parseQuery } from "@/lib/log-query";
 import { parsePastedTimestamp } from "@/lib/log-time-paste";
 import { appendClause, buildClause, flattenPayload, operatorsFor, type FilterOp, type PayloadField } from "@/lib/log-filter-builder";
 import { useBusyState } from "@/hooks/useBusyState";
+import { DownloadMenu } from "./DownloadMenu";
+import { SourcePicker } from "./SourcePicker";
+import { FALLBACK_LOG_SOURCES } from "@/lib/logs/log-source-groups";
 import { DEFAULT_LOG_SOURCES } from "@/lib/logs/log-sources";
 
 // ── Timezone ──────────────────────────────────────────────────────────────────
@@ -226,7 +229,7 @@ export interface TabConfig {
   /** Incremented to trigger a transaction trace fetch. */
   txSeq?: number;
   // View prefs (persisted per tab)
-  viewMode?: "terminal" | "table" | "json"; // "json": removed view, may still be saved; read as table
+  viewMode?: "terminal" | "table" | "raw" | "json"; // "json": removed view, may still be saved; read as table
   /** @deprecated — use viewMode. Retained so old persisted tabs still open on the right view. */
   terminalView?: boolean;
   wrapLines?: boolean;
@@ -511,50 +514,6 @@ function ResizableHeader({
       />
     </th>
   );
-}
-
-/** Recursively unescape JSON-encoded string values within an object.
- *  Handles pure JSON strings and strings with a text prefix followed by
- *  embedded JSON (e.g. "SEVERE: [uuid] Content: {\"key\":\"val\"}").
- *  Embedded JSON is split into { _prefix, _json } so it renders cleanly. */
-function deepUnescapeJson(val: unknown): unknown {
-  if (typeof val === "string") {
-    const trimmed = val.trim();
-    // Pure JSON string
-    if ((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]"))) {
-      try { return deepUnescapeJson(JSON.parse(trimmed)); } catch { /* not valid JSON — keep as string */ }
-    }
-    // Text prefix with embedded JSON: find the first { or [ and try to parse from there
-    const jsonStart = findJsonStart(trimmed);
-    if (jsonStart > 0) {
-      const candidate = trimmed.slice(jsonStart);
-      try {
-        const parsed = deepUnescapeJson(JSON.parse(candidate));
-        return { _prefix: trimmed.slice(0, jsonStart).trimEnd(), _json: parsed };
-      } catch { /* not valid JSON after prefix */ }
-    }
-    return val;
-  }
-  if (Array.isArray(val)) return val.map(deepUnescapeJson);
-  if (val !== null && typeof val === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(val as Record<string, unknown>)) {
-      out[k] = deepUnescapeJson(v);
-    }
-    return out;
-  }
-  return val;
-}
-
-/** Find the index of the first opening delimiter that matches the string's
- *  closing delimiter. If the string ends with }, look for the first {.
- *  If it ends with ], look for the first [. This avoids false positives
- *  like "[uuid]" appearing before the actual JSON object. */
-function findJsonStart(s: string): number {
-  const t = s.trimEnd();
-  if (t.endsWith("}")) { const i = s.indexOf("{"); return i > 0 ? i : -1; }
-  if (t.endsWith("]")) { const i = s.indexOf("["); return i > 0 ? i : -1; }
-  return -1;
 }
 
 /**
@@ -1688,6 +1647,26 @@ const EntryRow = memo(function EntryRow({
 // value's type are shown disabled so it's clear they exist.
 const ALL_FILTER_OPS: FilterOp[] = ["eq", "co", "sw", "gt", "ge", "lt", "le", "pr"];
 
+// Shortcuts into the filter builder while nothing is loaded yet (there are no
+// rows to pick fields from). Paths common to the AIC JSON log sources.
+const START_FILTER_PATHS = ["/payload/eventName", "/payload/transactionId", "/payload/userId", "/payload/level", "/payload/response/status"];
+
+function FilterStartFields({ onPick }: { onPick: (field: PayloadField) => void }) {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-1.5 mt-3 text-xs">
+      <span className="text-slate-400">Build a queryFilter from:</span>
+      {START_FILTER_PATHS.map((path) => (
+        <button key={path} type="button" onClick={() => onPick({ path, value: "", type: "string" })} className="toggle-chip font-mono">
+          {path}
+        </button>
+      ))}
+      <button type="button" onClick={() => onPick({ path: "/payload/", value: "", type: "string" })} className="toggle-chip">
+        Other field…
+      </button>
+    </div>
+  );
+}
+
 function pickedFieldKey(f: PayloadField): string {
   return `${f.path}\u0000${f.value}`;
 }
@@ -2125,8 +2104,9 @@ export function LogsExplorer({
   const [showFullMessage, setShowFullMessage] = useState(false);
   // View prefs live in TabConfig so they persist per tab across reloads.
   // A tab saved with the removed JSON view ("json") opens in Table.
-  const viewMode: "terminal" | "table" =
-    (config.viewMode ?? (config.terminalView === false ? "table" : "terminal")) === "terminal" ? "terminal" : "table";
+  const savedViewMode = config.viewMode ?? (config.terminalView === false ? "table" : "terminal");
+  const viewMode: "terminal" | "table" | "raw" =
+    savedViewMode === "terminal" || savedViewMode === "raw" ? savedViewMode : "table";
   const terminalView = viewMode === "terminal";
   const wrapLines = config.wrapLines ?? false;
   const dedupe = config.dedupe ?? false;
@@ -2134,7 +2114,7 @@ export function LogsExplorer({
   // always follow the newest page as it streams in; scrolling away or clicking
   // an entry still pauses that, and Jump to bottom resumes it.
   const autoScroll = mode !== "tail" || (config.autoScroll ?? true);
-  const setViewMode = useCallback((v: "terminal" | "table") => {
+  const setViewMode = useCallback((v: "terminal" | "table" | "raw") => {
     // Also write terminalView for backward compat with any pre-existing persisted state.
     onConfigChange({ viewMode: v, terminalView: v === "terminal" });
   }, [onConfigChange]);
@@ -3437,6 +3417,11 @@ export function LogsExplorer({
                     : "border-slate-300 focus:ring-sky-500"
               )}
             />
+            {search && !filterQuery.error && (
+              <span className="text-xs text-slate-500 whitespace-nowrap tabular-nums" title="Loaded entries that match / all loaded entries">
+                {filtered.length.toLocaleString("en-US")} of {levelFiltered.length.toLocaleString("en-US")}
+              </span>
+            )}
             {filterQuery.error && (
               <span className="text-xs text-rose-600 whitespace-nowrap" title={filterQuery.error}>
                 {filterQuery.error}
@@ -3596,6 +3581,17 @@ export function LogsExplorer({
                 )}
               >
                 Table
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("raw")}
+                title="Log entries exactly as AIC returned them, one JSON object per line"
+                className={cn(
+                  "seg-sm-item",
+                  viewMode === "raw" && "seg-sm-item-active"
+                )}
+              >
+                Raw
               </button>
             </div>
             {/* Wrap toggle — terminal view only */}
@@ -3764,36 +3760,24 @@ export function LogsExplorer({
             )}
             {fetched && (
               <>
-                <button
-                  type="button"
-                  onClick={() => {
-                    // Export is ALWAYS JSON regardless of the active view (Terminal/Table).
-                    // We export the full filtered entry objects (what the user currently sees in
-                    // the buffer after Level/Filter/Search). `deepUnescapeJson` expands nested
-                    // stringified-JSON payloads so the file is directly machine-parseable
-                    // without a second JSON.parse pass.
-                    const filtersActive = !!search || levelFilter !== "ALL";
-                    const data = JSON.stringify(filtered.map((e) => deepUnescapeJson(e)), null, 2);
-                    const blob = new Blob([data], { type: "application/json" });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement("a");
-                    a.href = url;
+                <DownloadMenu
+                  entries={filtered}
+                  pageSize={pageSize}
+                  currentPage={currentPage}
+                  toText={(e) => formatTerminalLine(e, tailSource)}
+                  baseName={() => {
                     const ts = new Date().toISOString().slice(0, 19).replace(/:/g, "");
-                    const suffix = filtersActive ? "-filtered" : "";
-                    a.download = `logs-${selectedSources.join("-")}-${ts}${suffix}.json`;
-                    a.click();
-                    URL.revokeObjectURL(url);
+                    const filtersActive = !!search || levelFilter !== "ALL";
+                    return `${mode === "tail" ? "tail" : "logs"}-${selectedSources.join("-")}-${ts}${filtersActive ? "-filtered" : ""}`;
                   }}
-                  className="text-xs text-slate-400 hover:text-slate-600 transition-colors shrink-0"
-                  title="Download visible entries as JSON (full payload, regardless of current view)"
-                >
-                  Export
-                </button>
+                />
                 <button
                   type="button"
                   onClick={() => {
                     let text: string;
-                    if (viewMode === "table") {
+                    if (viewMode === "raw") {
+                      text = filtered.map((e) => JSON.stringify(e)).join("\n");
+                    } else if (viewMode === "table") {
                       text = filtered.map((e) => {
                         const src = (e.source ?? selectedSources[0] ?? "").padEnd(15);
                         const lvl = getLevel(e).padEnd(5);
@@ -3878,16 +3862,18 @@ export function LogsExplorer({
         >
           {viewMode === "terminal" ? (
             !fetched && !tailing ? (
-              <div className="flex items-center justify-center h-full min-h-[160px]">
+              <div className="flex flex-col items-center justify-center h-full min-h-[160px] px-4">
                 <p className="text-sm text-slate-400">
                   {anchorTimestamp ? "Loading context…" : "Select sources and start tailing or run a search"}
                 </p>
+                {canBuildFilter && !anchorTimestamp && <FilterStartFields onPick={handlePickField} />}
               </div>
             ) : deferredIsActive && filtered.length === 0 && fetched && !searching ? (
-              <div className="flex items-center justify-center h-full min-h-[160px]">
+              <div className="flex flex-col items-center justify-center h-full min-h-[160px] px-4">
                 <p className="text-sm text-slate-400">
                   {entries.length === 0 ? "No log entries returned." : "No entries match the filter."}
                 </p>
+                {canBuildFilter && entries.length === 0 && <FilterStartFields onPick={handlePickField} />}
               </div>
             ) : (
               <TailTerminal
@@ -3930,12 +3916,21 @@ export function LogsExplorer({
               />
             )
           ) : !fetched ? (
-            <div className="flex items-center justify-center h-full min-h-[160px]">
+            <div className="flex flex-col items-center justify-center h-full min-h-[160px] px-4">
               <p className="text-sm text-slate-400">Select at least one source and click Tail Logs or Search</p>
+              {canBuildFilter && <FilterStartFields onPick={handlePickField} />}
             </div>
           ) : !deferredIsActive ? null : filtered.length === 0 && !searching ? (
             <div className="p-8 text-center text-sm text-slate-400">
               {entries.length === 0 ? "No log entries returned for this time range." : "No entries match the filter."}
+              {canBuildFilter && entries.length === 0 && <FilterStartFields onPick={handlePickField} />}
+            </div>
+          ) : viewMode === "raw" ? (
+            // Entries are the Log API `result` items untouched, so this is the raw response.
+            <div className="code-surface min-h-full px-4 py-1 bg-slate-900 text-slate-200 font-mono text-xs leading-5 select-text">
+              {pageEntries.map((e, i) => (
+                <div key={pageStartIdx + i} className="py-1.5 border-b border-slate-800 whitespace-pre-wrap break-all">{JSON.stringify(e)}</div>
+              ))}
             </div>
           ) : (
             <table className="text-xs border-collapse" style={{ tableLayout: "fixed", width: "100%", minWidth: 700 }}>
@@ -3987,12 +3982,12 @@ export function LogsExplorer({
             </table>
           )}
         </div>
-        {viewMode === "table" && <ScrollbarOverlay containerRef={scrollContainerRef} />}
+        {viewMode !== "terminal" && <ScrollbarOverlay containerRef={scrollContainerRef} />}
         {/* Floating Jump-to-bottom — Table view only. The terminal viewer renders
             its own button. Visible whenever the user has scrolled
             away from the tail (manual scroll, click-to-inspect, match-nav).
             Click resumes auto-tail by snapping to the latest entries. */}
-        {viewMode === "table" && fetched && filtered.length > 0 && !tableAtBottom && (
+        {viewMode !== "terminal" && fetched && filtered.length > 0 && !tableAtBottom && (
           <button
             type="button"
             onClick={() => {
@@ -4017,8 +4012,8 @@ export function LogsExplorer({
           </button>
         )}
 
-        {/* Pagination controls — table view only */}
-        {viewMode === "table" && fetched && filtered.length > 0 && (
+        {/* Pagination controls — Table and Raw views */}
+        {viewMode !== "terminal" && fetched && filtered.length > 0 && (
           <div className="flex items-center justify-between px-4 py-2 border-t border-slate-100 bg-slate-50/50 shrink-0">
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-500">
@@ -4257,25 +4252,6 @@ export function LogsExplorer({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  try {
-                    const lines = entries.map((e) => formatTerminalLine(e, tailSource)).join("\n");
-                    const blob = new Blob([lines], { type: "text/plain" });
-                    const url = URL.createObjectURL(blob);
-                    const a = Object.assign(document.createElement("a"), {
-                      href: url,
-                      download: `tail-${new Date().toISOString().slice(0, 19).replace(/:/g, "")}.log`,
-                    });
-                    a.click();
-                    URL.revokeObjectURL(url);
-                  } catch { /* ignore */ }
-                }}
-                className="px-2.5 py-1 text-xs font-medium bg-slate-200 text-slate-700 rounded hover:bg-slate-300 transition-colors"
-              >
-                Export session
-              </button>
-              <button
-                type="button"
                 onClick={() => onConfigChange({ tailing: false })}
                 className="px-2.5 py-1 text-xs font-medium bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
               >
@@ -4440,6 +4416,20 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
   const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0];
   const cfg = activeTab?.config;
 
+  // The tenant's log sources, per environment (GET /monitoring/logs/sources).
+  const [tenantSources, setTenantSources] = useState<Record<string, string[]>>({});
+  const activeEnv = cfg?.env;
+  useEffect(() => {
+    if (!activeEnv || tenantSources[activeEnv]) return;
+    let cancelled = false;
+    fetch(`/api/logs/sources?env=${encodeURIComponent(activeEnv)}`)
+      .then((r) => r.json())
+      .then((data) => Array.isArray(data?.result) ? data.result as string[] : FALLBACK_LOG_SOURCES)
+      .catch(() => FALLBACK_LOG_SOURCES)
+      .then((list) => { if (!cancelled) setTenantSources((prev) => ({ ...prev, [activeEnv]: list })); });
+    return () => { cancelled = true; };
+  }, [activeEnv, tenantSources]);
+
   const updateActiveConfig = useCallback((updates: Partial<TabConfig>) => {
     setTabs((prev) =>
       prev.map((t) =>
@@ -4545,25 +4535,13 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
 
                 <div className="space-y-1">
                   <label className="label-xs">Log Source</label>
-                  <div className="flex items-center gap-3 h-9">
-                    {LOG_SOURCES.map((s) => (
-                      <label key={s} className={cn("flex items-center gap-1.5 text-sm cursor-pointer select-none", (cfg.loading || cfg.tailing) ? "opacity-50 cursor-not-allowed" : "")}>
-                        <input
-                          type="checkbox"
-                          checked={cfg.selectedSources.includes(s)}
-                          disabled={cfg.loading || cfg.tailing}
-                          onChange={(e) => {
-                            const next = e.target.checked
-                              ? [...cfg.selectedSources, s]
-                              : cfg.selectedSources.filter((x) => x !== s);
-                            updateActiveConfig({ selectedSources: next, tailing: false });
-                          }}
-                          className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                        />
-                        <span className="font-mono text-xs">{s}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <SourcePicker
+                    sources={tenantSources[cfg.env] ?? FALLBACK_LOG_SOURCES}
+                    loading={!tenantSources[cfg.env]}
+                    selected={cfg.selectedSources}
+                    disabled={cfg.loading || cfg.tailing}
+                    onChange={(next) => updateActiveConfig({ selectedSources: next, tailing: false })}
+                  />
                 </div>
 
                 <div className="space-y-1">

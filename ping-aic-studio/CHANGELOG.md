@@ -13,13 +13,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Logs: type or paste a timestamp for the custom time range.** A `Pick | Text` switch sits next to the range. Text takes a log timestamp such as `2026-10-13T02:08:30.383Z` (or epoch seconds/milliseconds) and reads it in the current time zone; the start rounds down and the end rounds up to the second so that entry stays in range.
 
+- **Logs: Raw view.** `Terminal | Table | Raw` — Raw lists each entry exactly as the AIC Log API returned it, one JSON object per entry, paged like Table. Copy in Raw copies those JSON lines.
+
+- **Logs: Download menu for Search and Tail.** Choose the current page, all loaded entries, or a page range; raw JSON, NDJSON or Terminal-style text; and optionally split into files of N entries. It replaces Export and Tail's Export session.
+
+- **Logs: start a queryFilter before anything is loaded.** The empty log area offers common fields (`/payload/eventName`, `/payload/transactionId`, …) and "Other field…" to open the filter builder.
+
+- Logs: Search loaded shows how many loaded entries match ("397 of 7,000").
+
+- **Logs: all of the tenant's log sources.** Log Source is a dropdown grouped AM / IDM / Other, filled from the tenant's `/monitoring/logs/sources` (e.g. `am-core`, `idm-sync`, `iga-api`), instead of only `am-everything` and `idm-everything`. It warns when a source is also covered by a selected `*-everything`.
+
 ### Changed
 
 - **Logs: queryFilter box replaces Keywords.** It is sent to AIC as-is as `_queryFilter` and now applies to Tail as well as Search (Enter or Clear restarts a running tail). Keywords guessed a filter that missed values outside `message` and `eventName` in JSON logs. Local search still uses the box as plain text.
 
 - **Logs: the in-page Filter box is now "Search loaded".** It only narrows logs already on the page and never queries AIC; its placeholder and Highlight's now show plain examples instead of the operator shorthand.
 
-- **Logs: JSON view removed.** Table covers it: an expanded row shows the fields or the raw JSON, and Export still downloads everything as JSON. Tabs saved on JSON open in Table. Switching from Terminal to Table now expands the entry selected in Terminal.
+- **Logs: JSON view removed.** Table covers it: an expanded row shows the fields or the raw JSON, and Download still saves everything as JSON. Tabs saved on JSON open in Table. Switching from Terminal to Table now expands the entry selected in Terminal.
 
 - **Logs: Auto-scroll is a Tail control.** The toggle only shows while in Tail; Search and Transaction results always follow the newest page as it loads, pausing when you scroll away or click an entry.
 
