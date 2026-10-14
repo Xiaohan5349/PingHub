@@ -12,6 +12,8 @@ import { parsePastedTimestamp } from "@/lib/log-time-paste";
 import { appendClause, buildClause, flattenPayload, operatorsFor, type FilterOp, type PayloadField } from "@/lib/log-filter-builder";
 import { useBusyState } from "@/hooks/useBusyState";
 import { DownloadMenu } from "./DownloadMenu";
+import { SourcePicker } from "./SourcePicker";
+import { FALLBACK_LOG_SOURCES } from "@/lib/logs/log-source-groups";
 import { DEFAULT_LOG_SOURCES } from "@/lib/logs/log-sources";
 
 // ── Timezone ──────────────────────────────────────────────────────────────────
@@ -4414,6 +4416,20 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
   const activeTab = tabs.find((t) => t.id === activeId) ?? tabs[0];
   const cfg = activeTab?.config;
 
+  // The tenant's log sources, per environment (GET /monitoring/logs/sources).
+  const [tenantSources, setTenantSources] = useState<Record<string, string[]>>({});
+  const activeEnv = cfg?.env;
+  useEffect(() => {
+    if (!activeEnv || tenantSources[activeEnv]) return;
+    let cancelled = false;
+    fetch(`/api/logs/sources?env=${encodeURIComponent(activeEnv)}`)
+      .then((r) => r.json())
+      .then((data) => Array.isArray(data?.result) ? data.result as string[] : FALLBACK_LOG_SOURCES)
+      .catch(() => FALLBACK_LOG_SOURCES)
+      .then((list) => { if (!cancelled) setTenantSources((prev) => ({ ...prev, [activeEnv]: list })); });
+    return () => { cancelled = true; };
+  }, [activeEnv, tenantSources]);
+
   const updateActiveConfig = useCallback((updates: Partial<TabConfig>) => {
     setTabs((prev) =>
       prev.map((t) =>
@@ -4519,25 +4535,13 @@ export function LogsExplorerTabs({ environments }: { environments: EnvWithLogApi
 
                 <div className="space-y-1">
                   <label className="label-xs">Log Source</label>
-                  <div className="flex items-center gap-3 h-9">
-                    {LOG_SOURCES.map((s) => (
-                      <label key={s} className={cn("flex items-center gap-1.5 text-sm cursor-pointer select-none", (cfg.loading || cfg.tailing) ? "opacity-50 cursor-not-allowed" : "")}>
-                        <input
-                          type="checkbox"
-                          checked={cfg.selectedSources.includes(s)}
-                          disabled={cfg.loading || cfg.tailing}
-                          onChange={(e) => {
-                            const next = e.target.checked
-                              ? [...cfg.selectedSources, s]
-                              : cfg.selectedSources.filter((x) => x !== s);
-                            updateActiveConfig({ selectedSources: next, tailing: false });
-                          }}
-                          className="rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-                        />
-                        <span className="font-mono text-xs">{s}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <SourcePicker
+                    sources={tenantSources[cfg.env] ?? FALLBACK_LOG_SOURCES}
+                    loading={!tenantSources[cfg.env]}
+                    selected={cfg.selectedSources}
+                    disabled={cfg.loading || cfg.tailing}
+                    onChange={(next) => updateActiveConfig({ selectedSources: next, tailing: false })}
+                  />
                 </div>
 
                 <div className="space-y-1">
