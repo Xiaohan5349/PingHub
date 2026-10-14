@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-13
+
 ### Added
 
 - **Logs: build the queryFilter from log fields.** Expanded table rows list the payload as fields; click a field name or value (or select part of a text value) to build a clause with `!`, the field path (editable), an operator (`eq`, `co`, `sw`, `pr`, and `gt`/`ge`/`lt`/`le` for numbers) and an `and`/`or` join, then add it to the queryFilter box. Operators that do not fit the value type are shown struck through. Raw shows the JSON as before.
