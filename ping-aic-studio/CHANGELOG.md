@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Logs: custom range includes its end time.** AIC leaves out entries stamped exactly at `endTime`, so Search now sends the end + 1 ms. Pasting one entry's timestamp as the end returns that entry, and the same time as start and end returns just that instant.
+
 - **Logs: Text time range keeps milliseconds.** A pasted timestamp such as `2026-11-14T12:36:22.039Z` is now sent to AIC exactly, instead of being rounded to the second (start down, end up), which pulled in other entries from the same seconds.
 
 ## [0.5.0] - 2026-10-13
