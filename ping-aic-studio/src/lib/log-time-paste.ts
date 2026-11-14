@@ -23,3 +23,11 @@ export function parsePastedTimestamp(text: string, zone: "local" | "utc"): Date 
     if (!Number.isFinite(ms)) return null;
     return new Date(ms);
 }
+
+/**
+ * AIC's `endTime` is exclusive (an entry stamped exactly at `endTime` is not
+ * returned), so the custom range sends its end + 1 ms to include that instant.
+ */
+export function inclusiveEndTime(iso: string): string {
+    return new Date(Date.parse(iso) + 1).toISOString();
+}
