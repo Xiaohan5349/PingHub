@@ -8,7 +8,7 @@ import { useDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { logEntryMatchKey } from "@/lib/log-match-navigation";
 import { parseQuery } from "@/lib/log-query";
-import { parsePastedTimestamp } from "@/lib/log-time-paste";
+import { inclusiveEndTime, parsePastedTimestamp } from "@/lib/log-time-paste";
 import { appendClause, buildClause, flattenPayload, operatorsFor, type FilterOp, type PayloadField } from "@/lib/log-filter-builder";
 import { useBusyState } from "@/hooks/useBusyState";
 import { DownloadMenu } from "./DownloadMenu";
@@ -2493,11 +2493,12 @@ export function LogsExplorer({
         onConfigChange({ searching: false });
         return doCleanup;
       }
-      if (new Date(endTime).getTime() <= new Date(beginTime).getTime()) {
-        setError("End time must be after start time.");
+      if (new Date(endTime).getTime() < new Date(beginTime).getTime()) {
+        setError("End time must not be before start time.");
         onConfigChange({ searching: false });
         return doCleanup;
       }
+      endTime = inclusiveEndTime(endTime);
     } else {
       const ms = PRESETS.find((p) => p.value === preset)!.ms;
       const now = new Date();
@@ -3195,7 +3196,7 @@ export function LogsExplorer({
             {/* Search mode controls */}
             {mode === "search" && (() => {
               const customRangeInvalid = preset === "custom" && !!customBegin && !!customEnd
-                && new Date(customEnd).getTime() <= new Date(customBegin).getTime();
+                && new Date(customEnd).getTime() < new Date(customBegin).getTime();
               return (
                 <div className="flex items-center gap-1.5 flex-1 min-w-0">
                   <select

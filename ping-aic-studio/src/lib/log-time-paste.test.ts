@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parsePastedTimestamp } from "./log-time-paste";
+import { inclusiveEndTime, parsePastedTimestamp } from "./log-time-paste";
 
 const iso = (d: Date | null) => d?.toISOString() ?? null;
 
@@ -29,5 +29,12 @@ describe("parsePastedTimestamp", () => {
         expect(parsePastedTimestamp("yesterday", "local")).toBeNull();
         expect(parsePastedTimestamp("2026-10-13", "local")).toBeNull();
         expect(parsePastedTimestamp("2026-13-45T99:99:99Z", "local")).toBeNull();
+    });
+});
+
+describe("inclusiveEndTime", () => {
+    it("adds 1 ms so AIC's exclusive endTime still returns the entry at that instant", () => {
+        expect(inclusiveEndTime("2026-11-14T12:36:22.039Z")).toBe("2026-11-14T12:36:22.040Z");
+        expect(inclusiveEndTime("2026-11-14T12:36:59.999Z")).toBe("2026-11-14T12:37:00.000Z");
     });
 });
